@@ -28,6 +28,9 @@
     <Image Include="Textures\windowslogo.dds">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Textures\white.dds">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">

@@ -21,8 +21,10 @@ Graphics::Graphics(ID3D11Device *g_pd3dDevice, ID3D11DeviceContext *g_pImmediate
 //--------------------------------------------------------------------------------------
 Graphics::~Graphics() {
 
-    if (g_pTextureRV1) g_pTextureRV1->Release();
-    if (g_pTextureRV2) g_pTextureRV2->Release();
+    if (g_pTextureRope) g_pTextureRope->Release();
+    if (g_pTextureFloor) g_pTextureFloor->Release();
+    if (g_pTextureWhite) g_pTextureWhite->Release();
+    if (g_pTextureGlove) g_pTextureGlove->Release();
 
     if (g_pBatchInputLayout) g_pBatchInputLayout->Release();
 
@@ -56,9 +58,15 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
 
 #pragma region Primitives
 
-    //g_Shape = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8, false);
-    g_Shape = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8.f, false);
-    g_Shape2 = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8.f, false);
+    // Player Hands
+    g_BallRed = GeometricPrimitive::CreateSphere(g_pImmediateContext, 2.f, 80.f, false);
+    g_BallGreen = GeometricPrimitive::CreateSphere(g_pImmediateContext, 2.f, 80.f, false);
+
+    // Ring Floor
+    g_Floor = GeometricPrimitive::CreateCube(g_pImmediateContext, 1.f, false);
+
+    // Corner Poles
+    g_Pole = GeometricPrimitive::CreateCylinder(g_pImmediateContext, 1.f, 1.f, 32.f, false);
 
 #pragma endregion
 
@@ -71,15 +79,17 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
 
 #pragma region Textures
 
-    //hr = CreateDDSTextureFromFile(g_pd3dDevice, L"seafloor.dds", nullptr, &g_pTextureRV1);
-    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/red.dds", nullptr, &g_pTextureRV1);
-    if (FAILED(hr))
-        return hr;
+    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/rope.dds", nullptr, &g_pTextureRope);
+    if (FAILED(hr)) { return hr; }
 
-    //hr = CreateDDSTextureFromFile(g_pd3dDevice, L"windowslogo.dds", nullptr, &g_pTextureRV2);
-    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/green.dds", nullptr, &g_pTextureRV2);
-    if (FAILED(hr))
-        return hr;
+    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/fibers.dds", nullptr, &g_pTextureFloor);
+    if (FAILED(hr)) { return hr; }
+
+    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/white.dds", nullptr, &g_pTextureWhite);
+    if (FAILED(hr)) { return hr; }
+
+    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/glove.dds", nullptr, &g_pTextureGlove);
+    if (FAILED(hr)) { return hr; }
 
 #pragma endregion
 
@@ -136,7 +146,7 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
     // Draw procedurally generated dynamic grid
     const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
     const XMVECTORF32 yaxis = { 0.f, 0.f, 20.f };
-    DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray, g_pImmediateContext);
+    //DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray, g_pImmediateContext);
 
     // Draw sprite
     g_Sprites->Begin(SpriteSortMode_Deferred);
@@ -147,21 +157,55 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
 
     g_Sprites->End();
 
-    // Draw 3D objects
-    g_Shape->Draw(*ball_Red, *g_View, *g_Projection, Colors::White, g_pTextureRV1);
-    g_Shape2->Draw(*ball_Green, *g_View, *g_Projection, Colors::White, g_pTextureRV2);
+    // Draw Player Hands
+    g_BallRed->Draw(*ball_Red, *g_View, *g_Projection, Colors::Red, g_pTextureGlove);
+    g_BallGreen->Draw(*ball_Green, *g_View, *g_Projection, Colors::Green, g_pTextureGlove);
 
-    /*XMVECTOR qid = XMQuaternionIdentity();
-    const XMVECTORF32 scale = { 0.05f, 0.05f, 0.05f };
-    //const XMVECTORF32 translate = { 3.f, -2.f, 4.f };
-    const XMVECTORF32 translate = { (tracker_green.x - (frameSize.width / 2.f)) / 50.f,
-    -(tracker_green.y - (frameSize.height / 2.f)) / 50.f,
-    4.f };
-    XMVECTOR rotate = XMQuaternionRotationRollPitchYaw(0, XM_PI/2.f, XM_PI/2.f);
-    local = XMMatrixMultiply(g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, translate));*/
+    // Draw Scene
 
-    //local = XMMatrixMultiply(g_World, XMMatrixTranslation(tracker_green.x / 100.f, tracker_green.y / 100.f, 4.f));
-    //g_Model->Draw( g_pImmediateContext, *g_States, local, g_View, g_Projection );
+    // Draw Floor
+    XMMATRIX m_FloorTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, -8.f, 4.f }, XMVECTOR{ 0.f, 0.f, 0.f }, XMVECTOR{ 50.f, 1.f, 100.f });
+    g_Floor->Draw(m_FloorTransform, *g_View, *g_Projection, Colors::CornflowerBlue, g_pTextureFloor);
+
+    // Draw Poles
+    XMMATRIX m_PoleTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, 0.f, 25.f }, XMVECTOR{ 0.0f, 0.0f, 0.0f }, XMVECTOR{ 1.f, 5.f, 1.f });
+    g_Pole->Draw(m_PoleTransform, *g_View, *g_Projection, Colors::DodgerBlue, g_pTextureWhite);
+    m_PoleTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, 0.f, 25.f }, XMVECTOR{ 0.0f, 0.0f, 0.0f }, XMVECTOR{ 1.f, 5.f, 1.f });
+    g_Pole->Draw(m_PoleTransform, *g_View, *g_Projection, Colors::Red, g_pTextureWhite);
+
+    // Draw Ropes
+    // Back
+    XMMATRIX m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, -1.5f, 25.f }, XMVECTOR{ XM_PIDIV2, 0.f, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, -0.5f, 25.f }, XMVECTOR{ XM_PIDIV2, 0.f, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::DodgerBlue, g_pTextureRope);
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, 0.5f, 25.f }, XMVECTOR{ XM_PIDIV2, 0.f, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::White, g_pTextureRope);
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, 1.5f, 25.f }, XMVECTOR{ XM_PIDIV2, 0.f, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
+    // Left
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, -1.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, -0.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::DodgerBlue, g_pTextureRope);
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, 0.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::White, g_pTextureRope);
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, 1.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
+    // Right
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, -1.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, -0.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::DodgerBlue, g_pTextureRope);
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, 0.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::White, g_pTextureRope);
+    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, 1.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
 
 }
 
+XMMATRIX Graphics::GetTransformMatrix(XMMATRIX *g_World, XMVECTOR position, XMVECTOR rotation, XMVECTOR scale) {
+    XMVECTOR qid = XMQuaternionIdentity();
+    XMVECTOR rotate = XMQuaternionRotationRollPitchYawFromVector(rotation);
+    return XMMatrixMultiply(*g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, position));
+}

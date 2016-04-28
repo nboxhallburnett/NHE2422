@@ -348,6 +348,7 @@ void CleanupDevice() {
     if (g_pd3dDevice) g_pd3dDevice->Release();
 
     graphics->~Graphics();
+    cameraInput->~Tracker();
 
 #ifdef DXTK_AUDIO
     g_audEngine.reset();
@@ -509,7 +510,7 @@ void Render() {
     //
     // Clear the back buffer
     //
-    g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, Colors::MidnightBlue);
+    g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, Colors::Black);
 
     //
     // Clear the depth buffer to 1.0 (max depth)
@@ -518,7 +519,7 @@ void Render() {
 
     XMMATRIX red = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getRedPosition().x - (frameSize.width / 2.f)) / 50.f,
         -(cameraInput->getRedPosition().y - (frameSize.height / 2.f)) / 50.f,
-        max(cameraInput->getRedSize() / 30.f, 4.f)));
+        max(cameraInput->getRedSize() / 80.f, 4.f)));
 
     XMMATRIX green = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getGreenPosition().x - (frameSize.width / 2.f)) / 50.f,
         -(cameraInput->getGreenPosition().y - (frameSize.height / 2.f)) / 50.f,
