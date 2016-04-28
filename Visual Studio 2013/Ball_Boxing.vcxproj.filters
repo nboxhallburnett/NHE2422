@@ -2,6 +2,12 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Code\main.cpp" />
+    <ClCompile Include="Code\tracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\OpenCVToolkit.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Textures\green.dds">
@@ -27,6 +33,12 @@
     <Filter Include="Resource Files">
       <UniqueIdentifier>{b2b3f2ae-9286-4f66-9660-19124ea2ac1a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{cc3a34e5-a31e-4dde-b2f3-93ce9a571100}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{67162a31-a7da-41de-9a2c-014224358006}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Media Include="Audio\musicmono_adpcm.wav">
@@ -39,16 +51,19 @@
     </MeshContentTask>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Code\SimpleSample.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Code\resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
     <ClInclude Include="Code\OpenCVToolkit.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
+    <ClInclude Include="Code\tracker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Code\Ball_Boxing.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

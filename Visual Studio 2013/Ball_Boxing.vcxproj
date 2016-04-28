@@ -359,12 +359,15 @@
   <ItemGroup>
     <ClInclude Include="Code\OpenCVToolkit.h" />
     <ClInclude Include="Code\resource.h" />
+    <ClInclude Include="Code\tracker.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Code\SimpleSample.rc" />
+    <ResourceCompile Include="Code\Ball_Boxing.rc" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\main.cpp" />
+    <ClCompile Include="Code\OpenCVToolkit.cpp" />
+    <ClCompile Include="Code\tracker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="DirectXTK\Audio\DirectXTKAudio_Desktop_2012_Win8.vcxproj">

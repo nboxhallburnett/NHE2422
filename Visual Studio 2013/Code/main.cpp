@@ -44,8 +44,7 @@
 
 #include <algorithm>
 
-// OpenCV
-#include "OpenCVToolkit.h"
+#include "tracker.h"
 
 using namespace DirectX;
 
@@ -84,23 +83,17 @@ std::unique_ptr<DirectX::SoundEffect>                   g_soundEffect;
 std::unique_ptr<DirectX::SoundEffectInstance>           g_effect1;
 std::unique_ptr<DirectX::SoundEffectInstance>           g_effect2;
 
-uint32_t                            g_audioEvent = 0;
-float                               g_audioTimerAcc = 0.f;
+uint32_t        g_audioEvent = 0;
+float           g_audioTimerAcc = 0.f;
 
-HDEVNOTIFY                          g_hNewAudio = nullptr;
+HDEVNOTIFY      g_hNewAudio = nullptr;
 #endif
 
-XMMATRIX                            g_World;
-XMMATRIX                            g_View;
-XMMATRIX                            g_Projection;
+XMMATRIX        g_World;
+XMMATRIX        g_View;
+XMMATRIX        g_Projection;
 
-
-//--------------------------------------------------------------------------------------
-// OpenCV
-//--------------------------------------------------------------------------------------
-void UpdateCamera();
-
-void DetectInput(double time);
+Tracker*        cameraInput;
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -150,45 +143,9 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
             // debugging and you don't want the deltaTime value to explode.
             deltaTime = std::min<float>(deltaTime, maxTimeStep);
 
+            cameraInput->UpdateCamera();
+
             Render();
-
-            if (!webcam.read(frame)) {
-                break;
-            }
-
-            flip(frame, frame, 1);//See the image as mirror
-
-            //Green Colour recognition
-            if (hist_green.data) {
-                updateTrackAndSize(frame, hist_green, tracker_green, size_green);
-                //tracker_green = colourTracking(frame, hist_green);
-                //size_green = colourSize(frame, hist_green);
-            }
-            //Red Colour recognition
-            if (hist_red.data) {
-                updateTrackAndSize(frame, hist_red, tracker_red, size_red);
-                //tracker_red = colourTracking(frame, hist_red);
-                //size_red = colourSize(frame, hist_red);
-            }
-
-
-
-            /* Uncomment this if you want to see the camera window
-            std::ostringstream convert_green;
-            convert_green << "Green: x=" << tracker_green.x << " y=" << tracker_green.y;
-            std::string result_green = convert_green.str();
-            cv::putText(frame, result_green, cv::Point(10, 20), 1, 1, cv::Scalar(0, 255, 255), 1);
-            cv::putText(frame, "+", tracker_green, 1, 3, cv::Scalar(0, 255, 0), 2);
-
-            std::ostringstream convert_red;
-            convert_red << "Red: x=" << tracker_red.x << " y=" << tracker_red.y;
-            std::string result_red = convert_red.str();
-            cv::putText(frame, result_red, cv::Point(10, 40), 1, 1, cv::Scalar(0, 255, 255), 1);
-            cv::putText(frame, "+", tracker_red, 1, 3, cv::Scalar(0, 0, 255), 2);
-
-            // Show the camera tracker window
-            imshow("Green & Red", frame);
-            */
         }
     }
 
@@ -233,28 +190,10 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow) {
 
     ShowWindow(g_hWnd, nCmdShow);
 
-    if (!webcam.isOpened()) {
-        std::cout << "Cannot open the video cam" << std::endl;
-        return -1;
+    cameraInput = new Tracker();
+    if (!cameraInput->InitCamera()) {
+        return E_FAIL;
     }
-
-    // Init the green ball tracker
-
-    stop = false;
-    delay = 30; //ms
-    l_threshold = 100;
-    h_threshold = 200;
-    cv::FileStorage fs_g("Histograms/colour_hist_GREEN.yml", cv::FileStorage::READ);
-    if (!fs_g.isOpened()) { std::cout << "unable to open file storage!" << std::endl; }
-    fs_g["histogram"] >> hist_green;
-    fs_g.release();
-
-    // Init the red ball tracker
-
-    cv::FileStorage fs_r("Histograms/colour_hist_RED.yml", cv::FileStorage::READ);
-    if (!fs_r.isOpened()) { std::cout << "unable to open file storage!" << std::endl; }
-    fs_r["histogram"] >> hist_red;
-    fs_r.release();
 
     return S_OK;
 }
@@ -691,30 +630,16 @@ void Render() {
     g_Sprites->Begin(SpriteSortMode_Deferred);
     //g_Sprites->Draw( g_pTextureRV2, XMFLOAT2(10, 75 ), nullptr, Colors::White );
 
-    // Get a string to use for the position of the Green ball
-    std::ostringstream convert_green;
-    convert_green << "Green Ball: x=" << tracker_green.x << " y=" << tracker_green.y << " size: " << roundf(size_green.area() / 100.f / 20.f) * 20.f;
-    std::string result_green = convert_green.str();
-    std::wstring widestr_g = std::wstring(result_green.begin(), result_green.end());
-    const wchar_t* w_Green = widestr_g.c_str();
-
-    // Get a string to use for the position of the Green ball
-    std::ostringstream convert_red;
-    convert_red << "Red Ball: x=" << tracker_red.x << " y=" << tracker_red.y << " size: " << size_red.area();
-    std::string result_red = convert_red.str();
-    std::wstring widestr_r = std::wstring(result_red.begin(), result_red.end());
-    const wchar_t* w_Red = widestr_r.c_str();
-
-    g_Font->DrawString(g_Sprites.get(), w_Green, XMFLOAT2(10, 0), Colors::Green);
-    g_Font->DrawString(g_Sprites.get(), w_Red, XMFLOAT2(10, 40), Colors::Red);
+    g_Font->DrawString(g_Sprites.get(), cameraInput->getGreenTrackerString().c_str(), XMFLOAT2(10, 0), Colors::Green);
+    g_Font->DrawString(g_Sprites.get(), cameraInput->getRedTrackerString().c_str(), XMFLOAT2(10, 40), Colors::Red);
 
     g_Sprites->End();
 
     // Draw 3D objects
     //XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation(-2.f, -2.f, 4.f));
-    XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation((tracker_red.x - (frameSize.width / 2.f)) / 50.f,
-        -(tracker_red.y - (frameSize.height / 2.f)) / 50.f,
-        4.f));
+    XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getRedPosition().x - (frameSize.width / 2.f)) / 50.f,
+        -(cameraInput->getRedPosition().y - (frameSize.height / 2.f)) / 50.f,
+        max(cameraInput->getRedSize() / 30.f, 4.f)));
     g_Shape->Draw(local, g_View, g_Projection, Colors::White, g_pTextureRV1);
 
     /*XMVECTOR qid = XMQuaternionIdentity();
@@ -726,9 +651,9 @@ void Render() {
     XMVECTOR rotate = XMQuaternionRotationRollPitchYaw(0, XM_PI/2.f, XM_PI/2.f);
     local = XMMatrixMultiply(g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, translate));*/
 
-    local = XMMatrixMultiply(g_World, XMMatrixTranslation((tracker_green.x - (frameSize.width / 2.f)) / 50.f,
-        -(tracker_green.y - (frameSize.height / 2.f)) / 50.f,
-        roundf(size_green.area() / 100.f / 20.f) * 20.f));//4.f));
+    local = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getGreenPosition().x - (frameSize.width / 2.f)) / 50.f,
+        -(cameraInput->getGreenPosition().y - (frameSize.height / 2.f)) / 50.f,
+        max(cameraInput->getGreenSize() / 200.f, 4.f)));
 
     g_Shape2->Draw(local, g_View, g_Projection, Colors::White, g_pTextureRV2);
 
