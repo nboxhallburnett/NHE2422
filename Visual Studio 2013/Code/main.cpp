@@ -117,84 +117,84 @@ void Render();
 // loop. Idle time is used to render the scene.
 //--------------------------------------------------------------------------------------
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow) {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
 
-	if (FAILED(InitWindow(hInstance, nCmdShow))) {
-		return 0;
-	}
+    if (FAILED(InitWindow(hInstance, nCmdShow))) {
+        return 0;
+    }
 
-	if (FAILED(InitDevice())) {
-		CleanupDevice();
-		return 0;
-	}
+    if (FAILED(InitDevice())) {
+        CleanupDevice();
+        return 0;
+    }
 
-	// Main message loop
-	MSG msg = { 0 };
+    // Main message loop
+    MSG msg = { 0 };
 
-	static DWORD previousTime = timeGetTime();
-	static const float targetFramerate = 30.0f;
-	static const float maxTimeStep = 1.0f / targetFramerate;
+    static DWORD previousTime = timeGetTime();
+    static const float targetFramerate = 30.0f;
+    static const float maxTimeStep = 1.0f / targetFramerate;
 
-	while (WM_QUIT != msg.message) {
-		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-		else {
-			DWORD currentTime = timeGetTime();
-			float deltaTime = (currentTime - previousTime) / 1000.0f;
-			previousTime = currentTime;
+    while (WM_QUIT != msg.message) {
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else {
+            DWORD currentTime = timeGetTime();
+            float deltaTime = (currentTime - previousTime) / 1000.0f;
+            previousTime = currentTime;
 
-			// Cap the delta time to the max time step (useful if your 
-			// debugging and you don't want the deltaTime value to explode.
-			deltaTime = std::min<float>(deltaTime, maxTimeStep);
+            // Cap the delta time to the max time step (useful if your 
+            // debugging and you don't want the deltaTime value to explode.
+            deltaTime = std::min<float>(deltaTime, maxTimeStep);
 
-			Render();
+            Render();
 
-			if (!webcam.read(frame)) {
-				break;
-			}
+            if (!webcam.read(frame)) {
+                break;
+            }
 
-			flip(frame, frame, 1);//See the image as mirror
+            flip(frame, frame, 1);//See the image as mirror
 
-			//Green Colour recognition
-			if (hist_green.data) {
-				updateTrackAndSize(frame, hist_green, tracker_green, size_green);
-				//tracker_green = colourTracking(frame, hist_green);
-				//size_green = colourSize(frame, hist_green);
-			}
-			//Red Colour recognition
-			if (hist_red.data) {
-				updateTrackAndSize(frame, hist_red, tracker_red, size_red);
-				//tracker_red = colourTracking(frame, hist_red);
-				//size_red = colourSize(frame, hist_red);
-			}
+            //Green Colour recognition
+            if (hist_green.data) {
+                updateTrackAndSize(frame, hist_green, tracker_green, size_green);
+                //tracker_green = colourTracking(frame, hist_green);
+                //size_green = colourSize(frame, hist_green);
+            }
+            //Red Colour recognition
+            if (hist_red.data) {
+                updateTrackAndSize(frame, hist_red, tracker_red, size_red);
+                //tracker_red = colourTracking(frame, hist_red);
+                //size_red = colourSize(frame, hist_red);
+            }
 
 
 
-			/* Uncomment this if you want to see the camera window
-			std::ostringstream convert_green;
-			convert_green << "Green: x=" << tracker_green.x << " y=" << tracker_green.y;
-			std::string result_green = convert_green.str();
-			cv::putText(frame, result_green, cv::Point(10, 20), 1, 1, cv::Scalar(0, 255, 255), 1);
-			cv::putText(frame, "+", tracker_green, 1, 3, cv::Scalar(0, 255, 0), 2);
+            /* Uncomment this if you want to see the camera window
+            std::ostringstream convert_green;
+            convert_green << "Green: x=" << tracker_green.x << " y=" << tracker_green.y;
+            std::string result_green = convert_green.str();
+            cv::putText(frame, result_green, cv::Point(10, 20), 1, 1, cv::Scalar(0, 255, 255), 1);
+            cv::putText(frame, "+", tracker_green, 1, 3, cv::Scalar(0, 255, 0), 2);
 
-			std::ostringstream convert_red;
-			convert_red << "Red: x=" << tracker_red.x << " y=" << tracker_red.y;
-			std::string result_red = convert_red.str();
-			cv::putText(frame, result_red, cv::Point(10, 40), 1, 1, cv::Scalar(0, 255, 255), 1);
-			cv::putText(frame, "+", tracker_red, 1, 3, cv::Scalar(0, 0, 255), 2);
+            std::ostringstream convert_red;
+            convert_red << "Red: x=" << tracker_red.x << " y=" << tracker_red.y;
+            std::string result_red = convert_red.str();
+            cv::putText(frame, result_red, cv::Point(10, 40), 1, 1, cv::Scalar(0, 255, 255), 1);
+            cv::putText(frame, "+", tracker_red, 1, 3, cv::Scalar(0, 0, 255), 2);
 
-			// Show the camera tracker window
-			imshow("Green & Red", frame);
-			*/
-		}
-	}
+            // Show the camera tracker window
+            imshow("Green & Red", frame);
+            */
+        }
+    }
 
-	CleanupDevice();
+    CleanupDevice();
 
-	return (int)msg.wParam;
+    return (int)msg.wParam;
 }
 
 
@@ -202,61 +202,61 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 // Register class and create window
 //--------------------------------------------------------------------------------------
 HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow) {
-	// Register class
-	WNDCLASSEX wcex;
-	wcex.cbSize = sizeof(WNDCLASSEX);
-	wcex.style = CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc = WndProc;
-	wcex.cbClsExtra = 0;
-	wcex.cbWndExtra = 0;
-	wcex.hInstance = hInstance;
-	wcex.hIcon = LoadIcon(hInstance, (LPCTSTR)IDI_SAMPLE1);
-	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = nullptr;
-	wcex.lpszClassName = L"SampleWindowClass";
-	wcex.hIconSm = LoadIcon(wcex.hInstance, (LPCTSTR)IDI_SAMPLE1);
-	if (!RegisterClassEx(&wcex)) {
-		return E_FAIL;
-	}
+    // Register class
+    WNDCLASSEX wcex;
+    wcex.cbSize = sizeof(WNDCLASSEX);
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(hInstance, (LPCTSTR)IDI_SAMPLE1);
+    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = nullptr;
+    wcex.lpszClassName = L"SampleWindowClass";
+    wcex.hIconSm = LoadIcon(wcex.hInstance, (LPCTSTR)IDI_SAMPLE1);
+    if (!RegisterClassEx(&wcex)) {
+        return E_FAIL;
+    }
 
-	// Create window
-	g_hInst = hInstance;
-	RECT rc = { 0, 0, 1280, 720 };
-	AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-	g_hWnd = CreateWindow(L"SampleWindowClass", L"Ball Boxing!", WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
-		nullptr);
-	if (!g_hWnd) {
-		return E_FAIL;
-	}
+    // Create window
+    g_hInst = hInstance;
+    RECT rc = { 0, 0, 1280, 720 };
+    AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+    g_hWnd = CreateWindow(L"SampleWindowClass", L"Ball Boxing!", WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
+        nullptr);
+    if (!g_hWnd) {
+        return E_FAIL;
+    }
 
-	ShowWindow(g_hWnd, nCmdShow);
+    ShowWindow(g_hWnd, nCmdShow);
 
-	if (!webcam.isOpened()) {
-		std::cout << "Cannot open the video cam" << std::endl;
-		return -1;
-	}
+    if (!webcam.isOpened()) {
+        std::cout << "Cannot open the video cam" << std::endl;
+        return -1;
+    }
 
-	// Init the green ball tracker
+    // Init the green ball tracker
 
-	stop = false;
-	delay = 30; //ms
-	l_threshold = 100;
-	h_threshold = 200;
-	cv::FileStorage fs_g("Histograms/colour_hist_GREEN.yml", cv::FileStorage::READ);
-	if (!fs_g.isOpened()) { std::cout << "unable to open file storage!" << std::endl; }
-	fs_g["histogram"] >> hist_green;
-	fs_g.release();
+    stop = false;
+    delay = 30; //ms
+    l_threshold = 100;
+    h_threshold = 200;
+    cv::FileStorage fs_g("Histograms/colour_hist_GREEN.yml", cv::FileStorage::READ);
+    if (!fs_g.isOpened()) { std::cout << "unable to open file storage!" << std::endl; }
+    fs_g["histogram"] >> hist_green;
+    fs_g.release();
 
-	// Init the red ball tracker
+    // Init the red ball tracker
 
-	cv::FileStorage fs_r("Histograms/colour_hist_RED.yml", cv::FileStorage::READ);
-	if (!fs_r.isOpened()) { std::cout << "unable to open file storage!" << std::endl; }
-	fs_r["histogram"] >> hist_red;
-	fs_r.release();
+    cv::FileStorage fs_r("Histograms/colour_hist_RED.yml", cv::FileStorage::READ);
+    if (!fs_r.isOpened()) { std::cout << "unable to open file storage!" << std::endl; }
+    fs_r["histogram"] >> hist_red;
+    fs_r.release();
 
-	return S_OK;
+    return S_OK;
 }
 
 
@@ -264,197 +264,197 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow) {
 // Create Direct3D device and swap chain
 //--------------------------------------------------------------------------------------
 HRESULT InitDevice() {
-	HRESULT hr = S_OK;
+    HRESULT hr = S_OK;
 
-	RECT rc;
-	GetClientRect(g_hWnd, &rc);
-	UINT width = rc.right - rc.left;
-	UINT height = rc.bottom - rc.top;
+    RECT rc;
+    GetClientRect(g_hWnd, &rc);
+    UINT width = rc.right - rc.left;
+    UINT height = rc.bottom - rc.top;
 
-	UINT createDeviceFlags = 0;
+    UINT createDeviceFlags = 0;
 #ifdef _DEBUG
-	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-	D3D_DRIVER_TYPE driverTypes[] =
-	{
-		D3D_DRIVER_TYPE_HARDWARE,
-		D3D_DRIVER_TYPE_WARP,
-		D3D_DRIVER_TYPE_REFERENCE,
-	};
-	UINT numDriverTypes = ARRAYSIZE(driverTypes);
+    D3D_DRIVER_TYPE driverTypes[] =
+    {
+        D3D_DRIVER_TYPE_HARDWARE,
+        D3D_DRIVER_TYPE_WARP,
+        D3D_DRIVER_TYPE_REFERENCE,
+    };
+    UINT numDriverTypes = ARRAYSIZE(driverTypes);
 
-	D3D_FEATURE_LEVEL featureLevels[] =
-	{
-		D3D_FEATURE_LEVEL_11_0,
-		D3D_FEATURE_LEVEL_10_1,
-		D3D_FEATURE_LEVEL_10_0,
-	};
-	UINT numFeatureLevels = ARRAYSIZE(featureLevels);
+    D3D_FEATURE_LEVEL featureLevels[] =
+    {
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+    };
+    UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
-	DXGI_SWAP_CHAIN_DESC sd;
-	ZeroMemory(&sd, sizeof(sd));
-	sd.BufferCount = 1;
-	sd.BufferDesc.Width = width;
-	sd.BufferDesc.Height = height;
-	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	sd.BufferDesc.RefreshRate.Numerator = 60;
-	sd.BufferDesc.RefreshRate.Denominator = 1;
-	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.OutputWindow = g_hWnd;
-	sd.SampleDesc.Count = 1;
-	sd.SampleDesc.Quality = 0;
-	sd.Windowed = TRUE;
+    DXGI_SWAP_CHAIN_DESC sd;
+    ZeroMemory(&sd, sizeof(sd));
+    sd.BufferCount = 1;
+    sd.BufferDesc.Width = width;
+    sd.BufferDesc.Height = height;
+    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    sd.BufferDesc.RefreshRate.Numerator = 60;
+    sd.BufferDesc.RefreshRate.Denominator = 1;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    sd.OutputWindow = g_hWnd;
+    sd.SampleDesc.Count = 1;
+    sd.SampleDesc.Quality = 0;
+    sd.Windowed = TRUE;
 
-	for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++) {
-		g_driverType = driverTypes[driverTypeIndex];
-		hr = D3D11CreateDeviceAndSwapChain(nullptr, g_driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
-			D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &g_featureLevel, &g_pImmediateContext);
-		if (SUCCEEDED(hr)) {
-			break;
-		}
-	}
-	if (FAILED(hr)) {
-		return hr;
-	}
+    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++) {
+        g_driverType = driverTypes[driverTypeIndex];
+        hr = D3D11CreateDeviceAndSwapChain(nullptr, g_driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
+            D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &g_featureLevel, &g_pImmediateContext);
+        if (SUCCEEDED(hr)) {
+            break;
+        }
+    }
+    if (FAILED(hr)) {
+        return hr;
+    }
 
-	// Create a render target view
-	ID3D11Texture2D* pBackBuffer = nullptr;
-	hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-	if (FAILED(hr)) {
-		return hr;
-	}
+    // Create a render target view
+    ID3D11Texture2D* pBackBuffer = nullptr;
+    hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+    if (FAILED(hr)) {
+        return hr;
+    }
 
-	hr = g_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &g_pRenderTargetView);
-	pBackBuffer->Release();
-	if (FAILED(hr)) {
-		return hr;
-	}
+    hr = g_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &g_pRenderTargetView);
+    pBackBuffer->Release();
+    if (FAILED(hr)) {
+        return hr;
+    }
 
-	// Create depth stencil texture
-	D3D11_TEXTURE2D_DESC descDepth;
-	ZeroMemory(&descDepth, sizeof(descDepth));
-	descDepth.Width = width;
-	descDepth.Height = height;
-	descDepth.MipLevels = 1;
-	descDepth.ArraySize = 1;
-	descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	descDepth.SampleDesc.Count = 1;
-	descDepth.SampleDesc.Quality = 0;
-	descDepth.Usage = D3D11_USAGE_DEFAULT;
-	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	descDepth.CPUAccessFlags = 0;
-	descDepth.MiscFlags = 0;
-	hr = g_pd3dDevice->CreateTexture2D(&descDepth, nullptr, &g_pDepthStencil);
-	if (FAILED(hr)) {
-		return hr;
-	}
+    // Create depth stencil texture
+    D3D11_TEXTURE2D_DESC descDepth;
+    ZeroMemory(&descDepth, sizeof(descDepth));
+    descDepth.Width = width;
+    descDepth.Height = height;
+    descDepth.MipLevels = 1;
+    descDepth.ArraySize = 1;
+    descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    descDepth.SampleDesc.Count = 1;
+    descDepth.SampleDesc.Quality = 0;
+    descDepth.Usage = D3D11_USAGE_DEFAULT;
+    descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    descDepth.CPUAccessFlags = 0;
+    descDepth.MiscFlags = 0;
+    hr = g_pd3dDevice->CreateTexture2D(&descDepth, nullptr, &g_pDepthStencil);
+    if (FAILED(hr)) {
+        return hr;
+    }
 
-	// Create the depth stencil view
-	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
-	ZeroMemory(&descDSV, sizeof(descDSV));
-	descDSV.Format = descDepth.Format;
-	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-	descDSV.Texture2D.MipSlice = 0;
-	hr = g_pd3dDevice->CreateDepthStencilView(g_pDepthStencil, &descDSV, &g_pDepthStencilView);
-	if (FAILED(hr)) {
-		return hr;
-	}
+    // Create the depth stencil view
+    D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+    ZeroMemory(&descDSV, sizeof(descDSV));
+    descDSV.Format = descDepth.Format;
+    descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    descDSV.Texture2D.MipSlice = 0;
+    hr = g_pd3dDevice->CreateDepthStencilView(g_pDepthStencil, &descDSV, &g_pDepthStencilView);
+    if (FAILED(hr)) {
+        return hr;
+    }
 
-	g_pImmediateContext->OMSetRenderTargets(1, &g_pRenderTargetView, g_pDepthStencilView);
+    g_pImmediateContext->OMSetRenderTargets(1, &g_pRenderTargetView, g_pDepthStencilView);
 
-	// Setup the viewport
-	D3D11_VIEWPORT vp;
-	vp.Width = (FLOAT)width;
-	vp.Height = (FLOAT)height;
-	vp.MinDepth = 0.0f;
-	vp.MaxDepth = 1.0f;
-	vp.TopLeftX = 0;
-	vp.TopLeftY = 0;
-	g_pImmediateContext->RSSetViewports(1, &vp);
+    // Setup the viewport
+    D3D11_VIEWPORT vp;
+    vp.Width = (FLOAT)width;
+    vp.Height = (FLOAT)height;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    vp.TopLeftX = 0;
+    vp.TopLeftY = 0;
+    g_pImmediateContext->RSSetViewports(1, &vp);
 
-	// Create DirectXTK objects
-	g_States.reset(new CommonStates(g_pd3dDevice));
-	g_Sprites.reset(new SpriteBatch(g_pImmediateContext));
-	g_FXFactory.reset(new EffectFactory(g_pd3dDevice));
-	g_Batch.reset(new PrimitiveBatch<VertexPositionColor>(g_pImmediateContext));
+    // Create DirectXTK objects
+    g_States.reset(new CommonStates(g_pd3dDevice));
+    g_Sprites.reset(new SpriteBatch(g_pImmediateContext));
+    g_FXFactory.reset(new EffectFactory(g_pd3dDevice));
+    g_Batch.reset(new PrimitiveBatch<VertexPositionColor>(g_pImmediateContext));
 
-	g_BatchEffect.reset(new BasicEffect(g_pd3dDevice));
-	g_BatchEffect->SetVertexColorEnabled(true);
+    g_BatchEffect.reset(new BasicEffect(g_pd3dDevice));
+    g_BatchEffect->SetVertexColorEnabled(true);
 
-	{
-		void const* shaderByteCode;
-		size_t byteCodeLength;
+    {
+        void const* shaderByteCode;
+        size_t byteCodeLength;
 
-		g_BatchEffect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
+        g_BatchEffect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
 
-		hr = g_pd3dDevice->CreateInputLayout(VertexPositionColor::InputElements,
-			VertexPositionColor::InputElementCount,
-			shaderByteCode, byteCodeLength,
-			&g_pBatchInputLayout);
-		if (FAILED(hr))
-			return hr;
-	}
+        hr = g_pd3dDevice->CreateInputLayout(VertexPositionColor::InputElements,
+            VertexPositionColor::InputElementCount,
+            shaderByteCode, byteCodeLength,
+            &g_pBatchInputLayout);
+        if (FAILED(hr))
+            return hr;
+    }
 
-	g_Font.reset(new SpriteFont(g_pd3dDevice, L"Fonts/italic.spritefont"));
+    g_Font.reset(new SpriteFont(g_pd3dDevice, L"Fonts/italic.spritefont"));
 
-	//g_Shape = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8, false);
-	g_Shape = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8.f, false);
-	g_Shape2 = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8.f, false);
+    //g_Shape = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8, false);
+    g_Shape = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8.f, false);
+    g_Shape2 = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8.f, false);
 
-	//g_Model = Model::CreateFromSDKMESH( g_pd3dDevice, L"tiny.sdkmesh", *g_FXFactory, true );
-	g_Model = Model::CreateFromCMO(g_pd3dDevice, L"Debug/teapot.cmo", *g_FXFactory, false);
+    //g_Model = Model::CreateFromSDKMESH( g_pd3dDevice, L"tiny.sdkmesh", *g_FXFactory, true );
+    g_Model = Model::CreateFromCMO(g_pd3dDevice, L"Debug/teapot.cmo", *g_FXFactory, false);
 
-	// Load the Texture
-	//hr = CreateDDSTextureFromFile(g_pd3dDevice, L"seafloor.dds", nullptr, &g_pTextureRV1);
-	hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/red.dds", nullptr, &g_pTextureRV1);
-	if (FAILED(hr))
-		return hr;
+    // Load the Texture
+    //hr = CreateDDSTextureFromFile(g_pd3dDevice, L"seafloor.dds", nullptr, &g_pTextureRV1);
+    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/red.dds", nullptr, &g_pTextureRV1);
+    if (FAILED(hr))
+        return hr;
 
-	//hr = CreateDDSTextureFromFile(g_pd3dDevice, L"windowslogo.dds", nullptr, &g_pTextureRV2);
-	hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/green.dds", nullptr, &g_pTextureRV2);
-	if (FAILED(hr))
-		return hr;
+    //hr = CreateDDSTextureFromFile(g_pd3dDevice, L"windowslogo.dds", nullptr, &g_pTextureRV2);
+    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/green.dds", nullptr, &g_pTextureRV2);
+    if (FAILED(hr))
+        return hr;
 
-	// Initialize the world matrices
-	g_World = XMMatrixIdentity();
+    // Initialize the world matrices
+    g_World = XMMatrixIdentity();
 
-	// Initialize the view matrix
-	XMVECTOR Eye = XMVectorSet(0.0f, 3.0f, -6.0f, 0.0f);
-	XMVECTOR At = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	g_View = XMMatrixLookAtLH(Eye, At, Up);
+    // Initialize the view matrix
+    XMVECTOR Eye = XMVectorSet(0.0f, 3.0f, -6.0f, 0.0f);
+    XMVECTOR At = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    g_View = XMMatrixLookAtLH(Eye, At, Up);
 
-	g_BatchEffect->SetView(g_View);
+    g_BatchEffect->SetView(g_View);
 
-	// Initialize the projection matrix
-	g_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / (FLOAT)height, 0.01f, 100.0f);
+    // Initialize the projection matrix
+    g_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / (FLOAT)height, 0.01f, 100.0f);
 
-	g_BatchEffect->SetProjection(g_Projection);
+    g_BatchEffect->SetProjection(g_Projection);
 
 #ifdef DXTK_AUDIO
 
-	// Create DirectXTK for Audio objects
-	AUDIO_ENGINE_FLAGS eflags = AudioEngine_Default;
+    // Create DirectXTK for Audio objects
+    AUDIO_ENGINE_FLAGS eflags = AudioEngine_Default;
 #ifdef _DEBUG
-	eflags = eflags | AudioEngine_Debug;
+    eflags = eflags | AudioEngine_Debug;
 #endif
-	g_audEngine.reset(new AudioEngine(eflags));
+    g_audEngine.reset(new AudioEngine(eflags));
 
-	g_audioEvent = 0;
-	g_audioTimerAcc = 10.f;
+    g_audioEvent = 0;
+    g_audioTimerAcc = 10.f;
 
-	g_waveBank.reset(new WaveBank(g_audEngine.get(), L"Audio/adpcmdroid.xwb"));
-	g_soundEffect.reset(new SoundEffect(g_audEngine.get(), L"Audio/MusicMono_adpcm.wav"));
-	g_effect1 = g_soundEffect->CreateInstance();
-	g_effect2 = g_waveBank->CreateInstance(10);
+    g_waveBank.reset(new WaveBank(g_audEngine.get(), L"Audio/adpcmdroid.xwb"));
+    g_soundEffect.reset(new SoundEffect(g_audEngine.get(), L"Audio/MusicMono_adpcm.wav"));
+    g_effect1 = g_soundEffect->CreateInstance();
+    g_effect2 = g_waveBank->CreateInstance(10);
 
-	g_effect1->Play(true);
-	g_effect2->Play();
+    g_effect1->Play(true);
+    g_effect2->Play();
 
 #endif // DXTK_AUDIO
 
-	return S_OK;
+    return S_OK;
 }
 
 
@@ -462,22 +462,22 @@ HRESULT InitDevice() {
 // Clean up the objects we've created
 //--------------------------------------------------------------------------------------
 void CleanupDevice() {
-	if (g_pImmediateContext) g_pImmediateContext->ClearState();
+    if (g_pImmediateContext) g_pImmediateContext->ClearState();
 
-	if (g_pBatchInputLayout) g_pBatchInputLayout->Release();
+    if (g_pBatchInputLayout) g_pBatchInputLayout->Release();
 
-	if (g_pTextureRV1) g_pTextureRV1->Release();
-	if (g_pTextureRV2) g_pTextureRV2->Release();
+    if (g_pTextureRV1) g_pTextureRV1->Release();
+    if (g_pTextureRV2) g_pTextureRV2->Release();
 
-	if (g_pDepthStencilView) g_pDepthStencilView->Release();
-	if (g_pDepthStencil) g_pDepthStencil->Release();
-	if (g_pRenderTargetView) g_pRenderTargetView->Release();
-	if (g_pSwapChain) g_pSwapChain->Release();
-	if (g_pImmediateContext) g_pImmediateContext->Release();
-	if (g_pd3dDevice) g_pd3dDevice->Release();
+    if (g_pDepthStencilView) g_pDepthStencilView->Release();
+    if (g_pDepthStencil) g_pDepthStencil->Release();
+    if (g_pRenderTargetView) g_pRenderTargetView->Release();
+    if (g_pSwapChain) g_pSwapChain->Release();
+    if (g_pImmediateContext) g_pImmediateContext->Release();
+    if (g_pd3dDevice) g_pd3dDevice->Release();
 
 #ifdef DXTK_AUDIO
-	g_audEngine.reset();
+    g_audEngine.reset();
 #endif
 }
 
@@ -486,109 +486,109 @@ void CleanupDevice() {
 // Called every time the application receives a message
 //--------------------------------------------------------------------------------------
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
-	PAINTSTRUCT ps;
-	HDC hdc;
+    PAINTSTRUCT ps;
+    HDC hdc;
 
-	switch (message) {
-	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
-		EndPaint(hWnd, &ps);
-		break;
+    switch (message) {
+    case WM_PAINT:
+        hdc = BeginPaint(hWnd, &ps);
+        EndPaint(hWnd, &ps);
+        break;
 
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
 
 #ifdef DXTK_AUDIO
 
-	case WM_CREATE:
-		if (!g_hNewAudio) {
-			// Ask for notification of new audio devices
-			DEV_BROADCAST_DEVICEINTERFACE filter = { 0 };
-			filter.dbcc_size = sizeof(filter);
-			filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
-			filter.dbcc_classguid = KSCATEGORY_AUDIO;
+    case WM_CREATE:
+        if (!g_hNewAudio) {
+            // Ask for notification of new audio devices
+            DEV_BROADCAST_DEVICEINTERFACE filter = { 0 };
+            filter.dbcc_size = sizeof(filter);
+            filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+            filter.dbcc_classguid = KSCATEGORY_AUDIO;
 
-			g_hNewAudio = RegisterDeviceNotification(hWnd, &filter, DEVICE_NOTIFY_WINDOW_HANDLE);
-		}
-		break;
+            g_hNewAudio = RegisterDeviceNotification(hWnd, &filter, DEVICE_NOTIFY_WINDOW_HANDLE);
+        }
+        break;
 
-	case WM_CLOSE:
-		if (g_hNewAudio) {
-			UnregisterDeviceNotification(g_hNewAudio);
-			g_hNewAudio = nullptr;
-		}
-		DestroyWindow(hWnd);
-		break;
+    case WM_CLOSE:
+        if (g_hNewAudio) {
+            UnregisterDeviceNotification(g_hNewAudio);
+            g_hNewAudio = nullptr;
+        }
+        DestroyWindow(hWnd);
+        break;
 
-	case WM_DEVICECHANGE:
-		switch (wParam) {
-		case DBT_DEVICEARRIVAL:
-		{
-			auto pDev = reinterpret_cast<PDEV_BROADCAST_HDR>(lParam);
-			if (pDev) {
-				if (pDev->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
-					auto pInter = reinterpret_cast<const PDEV_BROADCAST_DEVICEINTERFACE>(pDev);
-					if (pInter->dbcc_classguid == KSCATEGORY_AUDIO) {
+    case WM_DEVICECHANGE:
+        switch (wParam) {
+        case DBT_DEVICEARRIVAL:
+        {
+            auto pDev = reinterpret_cast<PDEV_BROADCAST_HDR>(lParam);
+            if (pDev) {
+                if (pDev->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
+                    auto pInter = reinterpret_cast<const PDEV_BROADCAST_DEVICEINTERFACE>(pDev);
+                    if (pInter->dbcc_classguid == KSCATEGORY_AUDIO) {
 #ifdef _DEBUG
-						OutputDebugStringA("INFO: New audio device detected: ");
-						OutputDebugString(pInter->dbcc_name);
-						OutputDebugStringA("\n");
+                        OutputDebugStringA("INFO: New audio device detected: ");
+                        OutputDebugString(pInter->dbcc_name);
+                        OutputDebugStringA("\n");
 #endif
-						// Setup timer to see if we need to try audio in a second
-						SetTimer(g_hWnd, 1, 1000, nullptr);
-					}
-				}
-			}
-		}
-		break;
+                        // Setup timer to see if we need to try audio in a second
+                        SetTimer(g_hWnd, 1, 1000, nullptr);
+                    }
+                }
+            }
+        }
+        break;
 
-		case DBT_DEVICEREMOVECOMPLETE:
-		{
-			auto pDev = reinterpret_cast<PDEV_BROADCAST_HDR>(lParam);
-			if (pDev) {
-				if (pDev->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
-					auto pInter = reinterpret_cast<const PDEV_BROADCAST_DEVICEINTERFACE>(pDev);
-					if (pInter->dbcc_classguid == KSCATEGORY_AUDIO) {
-						// Setup timer to  see if we need to retry audio in a second
-						SetTimer(g_hWnd, 2, 1000, nullptr);
-					}
-				}
-			}
-		}
-		break;
-		}
-		return 0;
+        case DBT_DEVICEREMOVECOMPLETE:
+        {
+            auto pDev = reinterpret_cast<PDEV_BROADCAST_HDR>(lParam);
+            if (pDev) {
+                if (pDev->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
+                    auto pInter = reinterpret_cast<const PDEV_BROADCAST_DEVICEINTERFACE>(pDev);
+                    if (pInter->dbcc_classguid == KSCATEGORY_AUDIO) {
+                        // Setup timer to  see if we need to retry audio in a second
+                        SetTimer(g_hWnd, 2, 1000, nullptr);
+                    }
+                }
+            }
+        }
+        break;
+        }
+        return 0;
 
-	case WM_TIMER:
-		if (wParam == 1) {
-			if (!g_audEngine->IsAudioDevicePresent()) {
-				PostMessage(g_hWnd, WM_USER, 0, 0);
-			}
-		}
-		else if (wParam == 2) {
-			if (g_audEngine->IsCriticalError()) {
-				PostMessage(g_hWnd, WM_USER, 0, 0);
-			}
-		}
-		break;
+    case WM_TIMER:
+        if (wParam == 1) {
+            if (!g_audEngine->IsAudioDevicePresent()) {
+                PostMessage(g_hWnd, WM_USER, 0, 0);
+            }
+        }
+        else if (wParam == 2) {
+            if (g_audEngine->IsCriticalError()) {
+                PostMessage(g_hWnd, WM_USER, 0, 0);
+            }
+        }
+        break;
 
-	case WM_USER:
-		if (g_audEngine->IsCriticalError() || !g_audEngine->IsAudioDevicePresent()) {
-			if (g_audEngine->Reset()) {
-				// Reset worked, so restart looping sounds
-				g_effect1->Play(true);
-			}
-		}
-		break;
+    case WM_USER:
+        if (g_audEngine->IsCriticalError() || !g_audEngine->IsAudioDevicePresent()) {
+            if (g_audEngine->Reset()) {
+                // Reset worked, so restart looping sounds
+                g_effect1->Play(true);
+            }
+        }
+        break;
 
 #endif // DXTK_AUDIO
 
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	}
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -596,38 +596,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 // Render a grid using PrimitiveBatch
 //--------------------------------------------------------------------------------------
 void DrawGrid(PrimitiveBatch<VertexPositionColor>& batch, FXMVECTOR xAxis, FXMVECTOR yAxis, FXMVECTOR origin, size_t xdivs, size_t ydivs, GXMVECTOR color) {
-	g_BatchEffect->Apply(g_pImmediateContext);
+    g_BatchEffect->Apply(g_pImmediateContext);
 
-	g_pImmediateContext->IASetInputLayout(g_pBatchInputLayout);
+    g_pImmediateContext->IASetInputLayout(g_pBatchInputLayout);
 
-	g_Batch->Begin();
+    g_Batch->Begin();
 
-	xdivs = std::max<size_t>(1, xdivs);
-	ydivs = std::max<size_t>(1, ydivs);
+    xdivs = std::max<size_t>(1, xdivs);
+    ydivs = std::max<size_t>(1, ydivs);
 
-	for (size_t i = 0; i <= xdivs; ++i) {
-		float fPercent = float(i) / float(xdivs);
-		fPercent = (fPercent * 2.0f) - 1.0f;
-		XMVECTOR vScale = XMVectorScale(xAxis, fPercent);
-		vScale = XMVectorAdd(vScale, origin);
+    for (size_t i = 0; i <= xdivs; ++i) {
+        float fPercent = float(i) / float(xdivs);
+        fPercent = (fPercent * 2.0f) - 1.0f;
+        XMVECTOR vScale = XMVectorScale(xAxis, fPercent);
+        vScale = XMVectorAdd(vScale, origin);
 
-		VertexPositionColor v1(XMVectorSubtract(vScale, yAxis), color);
-		VertexPositionColor v2(XMVectorAdd(vScale, yAxis), color);
-		batch.DrawLine(v1, v2);
-	}
+        VertexPositionColor v1(XMVectorSubtract(vScale, yAxis), color);
+        VertexPositionColor v2(XMVectorAdd(vScale, yAxis), color);
+        batch.DrawLine(v1, v2);
+    }
 
-	for (size_t i = 0; i <= ydivs; i++) {
-		FLOAT fPercent = float(i) / float(ydivs);
-		fPercent = (fPercent * 2.0f) - 1.0f;
-		XMVECTOR vScale = XMVectorScale(yAxis, fPercent);
-		vScale = XMVectorAdd(vScale, origin);
+    for (size_t i = 0; i <= ydivs; i++) {
+        FLOAT fPercent = float(i) / float(ydivs);
+        fPercent = (fPercent * 2.0f) - 1.0f;
+        XMVECTOR vScale = XMVectorScale(yAxis, fPercent);
+        vScale = XMVectorAdd(vScale, origin);
 
-		VertexPositionColor v1(XMVectorSubtract(vScale, xAxis), color);
-		VertexPositionColor v2(XMVectorAdd(vScale, xAxis), color);
-		batch.DrawLine(v1, v2);
-	}
+        VertexPositionColor v1(XMVectorSubtract(vScale, xAxis), color);
+        VertexPositionColor v2(XMVectorAdd(vScale, xAxis), color);
+        batch.DrawLine(v1, v2);
+    }
 
-	g_Batch->End();
+    g_Batch->End();
 }
 
 
@@ -635,109 +635,109 @@ void DrawGrid(PrimitiveBatch<VertexPositionColor>& batch, FXMVECTOR xAxis, FXMVE
 // Render a frame
 //--------------------------------------------------------------------------------------
 void Render() {
-	// Update our time
-	static float t = 0.0f;
-	static float dt = 0.f;
-	if (g_driverType == D3D_DRIVER_TYPE_REFERENCE) {
-		t += (float)XM_PI * 0.0125f;
-	}
-	else {
-		static uint64_t dwTimeStart = 0;
-		static uint64_t dwTimeLast = 0;
-		uint64_t dwTimeCur = GetTickCount64();
-		if (dwTimeStart == 0)
-			dwTimeStart = dwTimeCur;
-		t = (dwTimeCur - dwTimeStart) / 1000.0f;
-		dt = (dwTimeCur - dwTimeLast) / 1000.0f;
-		dwTimeLast = dwTimeCur;
-	}
+    // Update our time
+    static float t = 0.0f;
+    static float dt = 0.f;
+    if (g_driverType == D3D_DRIVER_TYPE_REFERENCE) {
+        t += (float)XM_PI * 0.0125f;
+    }
+    else {
+        static uint64_t dwTimeStart = 0;
+        static uint64_t dwTimeLast = 0;
+        uint64_t dwTimeCur = GetTickCount64();
+        if (dwTimeStart == 0)
+            dwTimeStart = dwTimeCur;
+        t = (dwTimeCur - dwTimeStart) / 1000.0f;
+        dt = (dwTimeCur - dwTimeLast) / 1000.0f;
+        dwTimeLast = dwTimeCur;
+    }
 
-	// Rotate cube around the origin
-	//g_World = XMMatrixRotationY( t );
+    // Rotate cube around the origin
+    //g_World = XMMatrixRotationY( t );
 
 #ifdef DXTK_AUDIO
 
-	g_audioTimerAcc -= dt;
-	if (g_audioTimerAcc < 0) {
-		g_audioTimerAcc = 4.f;
+    g_audioTimerAcc -= dt;
+    if (g_audioTimerAcc < 0) {
+        g_audioTimerAcc = 4.f;
 
-		g_waveBank->Play(g_audioEvent++);
+        g_waveBank->Play(g_audioEvent++);
 
-		if (g_audioEvent >= 11)
-			g_audioEvent = 0;
-	}
+        if (g_audioEvent >= 11)
+            g_audioEvent = 0;
+    }
 
-	if (!g_audEngine->Update()) {
-		// Error cases are handled by the message loop
-	}
+    if (!g_audEngine->Update()) {
+        // Error cases are handled by the message loop
+    }
 
 #endif // DXTK_AUDIO
-	//
-	// Clear the back buffer
-	//
-	g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, Colors::MidnightBlue);
+    //
+    // Clear the back buffer
+    //
+    g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, Colors::MidnightBlue);
 
-	//
-	// Clear the depth buffer to 1.0 (max depth)
-	//
-	g_pImmediateContext->ClearDepthStencilView(g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+    //
+    // Clear the depth buffer to 1.0 (max depth)
+    //
+    g_pImmediateContext->ClearDepthStencilView(g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	// Draw procedurally generated dynamic grid
-	const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
-	const XMVECTORF32 yaxis = { 0.f, 0.f, 20.f };
-	DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray);
+    // Draw procedurally generated dynamic grid
+    const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
+    const XMVECTORF32 yaxis = { 0.f, 0.f, 20.f };
+    DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray);
 
-	// Draw sprite
-	g_Sprites->Begin(SpriteSortMode_Deferred);
-	//g_Sprites->Draw( g_pTextureRV2, XMFLOAT2(10, 75 ), nullptr, Colors::White );
+    // Draw sprite
+    g_Sprites->Begin(SpriteSortMode_Deferred);
+    //g_Sprites->Draw( g_pTextureRV2, XMFLOAT2(10, 75 ), nullptr, Colors::White );
 
-	// Get a string to use for the position of the Green ball
-	std::ostringstream convert_green;
-	convert_green << "Green Ball: x=" << tracker_green.x << " y=" << tracker_green.y << " size: " << roundf(size_green.area() / 100.f / 20.f) * 20.f;
-	std::string result_green = convert_green.str();
-	std::wstring widestr_g = std::wstring(result_green.begin(), result_green.end());
-	const wchar_t* w_Green = widestr_g.c_str();
+    // Get a string to use for the position of the Green ball
+    std::ostringstream convert_green;
+    convert_green << "Green Ball: x=" << tracker_green.x << " y=" << tracker_green.y << " size: " << roundf(size_green.area() / 100.f / 20.f) * 20.f;
+    std::string result_green = convert_green.str();
+    std::wstring widestr_g = std::wstring(result_green.begin(), result_green.end());
+    const wchar_t* w_Green = widestr_g.c_str();
 
-	// Get a string to use for the position of the Green ball
-	std::ostringstream convert_red;
-	convert_red << "Red Ball: x=" << tracker_red.x << " y=" << tracker_red.y << " size: " << size_red.area();
-	std::string result_red = convert_red.str();
-	std::wstring widestr_r = std::wstring(result_red.begin(), result_red.end());
-	const wchar_t* w_Red = widestr_r.c_str();
+    // Get a string to use for the position of the Green ball
+    std::ostringstream convert_red;
+    convert_red << "Red Ball: x=" << tracker_red.x << " y=" << tracker_red.y << " size: " << size_red.area();
+    std::string result_red = convert_red.str();
+    std::wstring widestr_r = std::wstring(result_red.begin(), result_red.end());
+    const wchar_t* w_Red = widestr_r.c_str();
 
-	g_Font->DrawString(g_Sprites.get(), w_Green, XMFLOAT2(10, 0), Colors::Green);
-	g_Font->DrawString(g_Sprites.get(), w_Red, XMFLOAT2(10, 40), Colors::Red);
+    g_Font->DrawString(g_Sprites.get(), w_Green, XMFLOAT2(10, 0), Colors::Green);
+    g_Font->DrawString(g_Sprites.get(), w_Red, XMFLOAT2(10, 40), Colors::Red);
 
-	g_Sprites->End();
+    g_Sprites->End();
 
-	// Draw 3D objects
-	//XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation(-2.f, -2.f, 4.f));
-	XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation((tracker_red.x - (frameSize.width / 2.f)) / 50.f,
-		-(tracker_red.y - (frameSize.height / 2.f)) / 50.f,
-		4.f));
-	g_Shape->Draw(local, g_View, g_Projection, Colors::White, g_pTextureRV1);
+    // Draw 3D objects
+    //XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation(-2.f, -2.f, 4.f));
+    XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation((tracker_red.x - (frameSize.width / 2.f)) / 50.f,
+        -(tracker_red.y - (frameSize.height / 2.f)) / 50.f,
+        4.f));
+    g_Shape->Draw(local, g_View, g_Projection, Colors::White, g_pTextureRV1);
 
-	/*XMVECTOR qid = XMQuaternionIdentity();
-	const XMVECTORF32 scale = { 0.05f, 0.05f, 0.05f };
-	//const XMVECTORF32 translate = { 3.f, -2.f, 4.f };
-	const XMVECTORF32 translate = { (tracker_green.x - (frameSize.width / 2.f)) / 50.f,
-	-(tracker_green.y - (frameSize.height / 2.f)) / 50.f,
-	4.f };
-	XMVECTOR rotate = XMQuaternionRotationRollPitchYaw(0, XM_PI/2.f, XM_PI/2.f);
-	local = XMMatrixMultiply(g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, translate));*/
+    /*XMVECTOR qid = XMQuaternionIdentity();
+    const XMVECTORF32 scale = { 0.05f, 0.05f, 0.05f };
+    //const XMVECTORF32 translate = { 3.f, -2.f, 4.f };
+    const XMVECTORF32 translate = { (tracker_green.x - (frameSize.width / 2.f)) / 50.f,
+    -(tracker_green.y - (frameSize.height / 2.f)) / 50.f,
+    4.f };
+    XMVECTOR rotate = XMQuaternionRotationRollPitchYaw(0, XM_PI/2.f, XM_PI/2.f);
+    local = XMMatrixMultiply(g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, translate));*/
 
-	local = XMMatrixMultiply(g_World, XMMatrixTranslation((tracker_green.x - (frameSize.width / 2.f)) / 50.f,
-		-(tracker_green.y - (frameSize.height / 2.f)) / 50.f,
-		roundf(size_green.area() / 100.f / 20.f) * 20.f));//4.f));
+    local = XMMatrixMultiply(g_World, XMMatrixTranslation((tracker_green.x - (frameSize.width / 2.f)) / 50.f,
+        -(tracker_green.y - (frameSize.height / 2.f)) / 50.f,
+        roundf(size_green.area() / 100.f / 20.f) * 20.f));//4.f));
 
-	g_Shape2->Draw(local, g_View, g_Projection, Colors::White, g_pTextureRV2);
+    g_Shape2->Draw(local, g_View, g_Projection, Colors::White, g_pTextureRV2);
 
-	//local = XMMatrixMultiply(g_World, XMMatrixTranslation(tracker_green.x / 100.f, tracker_green.y / 100.f, 4.f));
-	//g_Model->Draw( g_pImmediateContext, *g_States, local, g_View, g_Projection );
+    //local = XMMatrixMultiply(g_World, XMMatrixTranslation(tracker_green.x / 100.f, tracker_green.y / 100.f, 4.f));
+    //g_Model->Draw( g_pImmediateContext, *g_States, local, g_View, g_Projection );
 
 
-	//
-	// Present our back buffer to our front buffer
-	//
-	g_pSwapChain->Present(0, 0);
+    //
+    // Present our back buffer to our front buffer
+    //
+    g_pSwapChain->Present(0, 0);
 }

@@ -357,6 +357,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Code\OpenCVToolkit.h" />
     <ClInclude Include="Code\resource.h" />
   </ItemGroup>
   <ItemGroup>

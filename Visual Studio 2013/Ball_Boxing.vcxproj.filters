@@ -47,5 +47,8 @@
     <ClInclude Include="Code\resource.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
+    <ClInclude Include="Code\OpenCVToolkit.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
