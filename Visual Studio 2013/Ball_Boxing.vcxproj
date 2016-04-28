@@ -357,6 +357,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Code\Graphics.h" />
     <ClInclude Include="Code\OpenCVToolkit.h" />
     <ClInclude Include="Code\resource.h" />
     <ClInclude Include="Code\tracker.h" />
@@ -365,6 +366,7 @@
     <ResourceCompile Include="Code\Ball_Boxing.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Code\Graphics.cpp" />
     <ClCompile Include="Code\main.cpp" />
     <ClCompile Include="Code\OpenCVToolkit.cpp" />
     <ClCompile Include="Code\tracker.cpp" />

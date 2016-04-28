@@ -29,22 +29,12 @@
 #include "Audio.h"
 #endif
 
-#include "CommonStates.h"
-#include "DDSTextureLoader.h"
-#include "Effects.h"
-#include "GeometricPrimitive.h"
-#include "Model.h"
-#include "PrimitiveBatch.h"
-#include "ScreenGrab.h"
-#include "SpriteBatch.h"
-#include "SpriteFont.h"
-#include "VertexTypes.h"
-
 #include "resource.h"
 
 #include <algorithm>
 
 #include "tracker.h"
+#include "Graphics.h"
 
 using namespace DirectX;
 
@@ -61,20 +51,6 @@ IDXGISwapChain*                     g_pSwapChain = nullptr;
 ID3D11RenderTargetView*             g_pRenderTargetView = nullptr;
 ID3D11Texture2D*                    g_pDepthStencil = nullptr;
 ID3D11DepthStencilView*             g_pDepthStencilView = nullptr;
-
-ID3D11ShaderResourceView*           g_pTextureRV1 = nullptr;
-ID3D11ShaderResourceView*           g_pTextureRV2 = nullptr;
-ID3D11InputLayout*                  g_pBatchInputLayout = nullptr;
-
-std::unique_ptr<CommonStates>                           g_States;
-std::unique_ptr<BasicEffect>                            g_BatchEffect;
-std::unique_ptr<EffectFactory>                          g_FXFactory;
-std::unique_ptr<GeometricPrimitive>                     g_Shape;
-std::unique_ptr<GeometricPrimitive>                     g_Shape2;
-std::unique_ptr<Model>                                  g_Model;
-std::unique_ptr<PrimitiveBatch<VertexPositionColor>>    g_Batch;
-std::unique_ptr<SpriteBatch>                            g_Sprites;
-std::unique_ptr<SpriteFont>                             g_Font;
 
 #ifdef DXTK_AUDIO
 std::unique_ptr<DirectX::AudioEngine>                   g_audEngine;
@@ -93,6 +69,7 @@ XMMATRIX        g_World;
 XMMATRIX        g_View;
 XMMATRIX        g_Projection;
 
+Graphics*       graphics;
 Tracker*        cameraInput;
 
 //--------------------------------------------------------------------------------------
@@ -312,49 +289,6 @@ HRESULT InitDevice() {
     vp.TopLeftY = 0;
     g_pImmediateContext->RSSetViewports(1, &vp);
 
-    // Create DirectXTK objects
-    g_States.reset(new CommonStates(g_pd3dDevice));
-    g_Sprites.reset(new SpriteBatch(g_pImmediateContext));
-    g_FXFactory.reset(new EffectFactory(g_pd3dDevice));
-    g_Batch.reset(new PrimitiveBatch<VertexPositionColor>(g_pImmediateContext));
-
-    g_BatchEffect.reset(new BasicEffect(g_pd3dDevice));
-    g_BatchEffect->SetVertexColorEnabled(true);
-
-    {
-        void const* shaderByteCode;
-        size_t byteCodeLength;
-
-        g_BatchEffect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
-
-        hr = g_pd3dDevice->CreateInputLayout(VertexPositionColor::InputElements,
-            VertexPositionColor::InputElementCount,
-            shaderByteCode, byteCodeLength,
-            &g_pBatchInputLayout);
-        if (FAILED(hr))
-            return hr;
-    }
-
-    g_Font.reset(new SpriteFont(g_pd3dDevice, L"Fonts/italic.spritefont"));
-
-    //g_Shape = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8, false);
-    g_Shape = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8.f, false);
-    g_Shape2 = GeometricPrimitive::CreateSphere(g_pImmediateContext, 4.f, 8.f, false);
-
-    //g_Model = Model::CreateFromSDKMESH( g_pd3dDevice, L"tiny.sdkmesh", *g_FXFactory, true );
-    g_Model = Model::CreateFromCMO(g_pd3dDevice, L"Debug/teapot.cmo", *g_FXFactory, false);
-
-    // Load the Texture
-    //hr = CreateDDSTextureFromFile(g_pd3dDevice, L"seafloor.dds", nullptr, &g_pTextureRV1);
-    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/red.dds", nullptr, &g_pTextureRV1);
-    if (FAILED(hr))
-        return hr;
-
-    //hr = CreateDDSTextureFromFile(g_pd3dDevice, L"windowslogo.dds", nullptr, &g_pTextureRV2);
-    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/green.dds", nullptr, &g_pTextureRV2);
-    if (FAILED(hr))
-        return hr;
-
     // Initialize the world matrices
     g_World = XMMatrixIdentity();
 
@@ -364,12 +298,15 @@ HRESULT InitDevice() {
     XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
     g_View = XMMatrixLookAtLH(Eye, At, Up);
 
-    g_BatchEffect->SetView(g_View);
-
     // Initialize the projection matrix
     g_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / (FLOAT)height, 0.01f, 100.0f);
 
-    g_BatchEffect->SetProjection(g_Projection);
+    // Graphics initialisation
+    graphics = new Graphics(g_pd3dDevice, g_pImmediateContext);
+    hr = graphics->Initialise(g_pd3dDevice, g_pImmediateContext, &g_View, &g_Projection);
+    if (FAILED(hr)) {
+        return hr;
+    }
 
 #ifdef DXTK_AUDIO
 
@@ -403,17 +340,14 @@ HRESULT InitDevice() {
 void CleanupDevice() {
     if (g_pImmediateContext) g_pImmediateContext->ClearState();
 
-    if (g_pBatchInputLayout) g_pBatchInputLayout->Release();
-
-    if (g_pTextureRV1) g_pTextureRV1->Release();
-    if (g_pTextureRV2) g_pTextureRV2->Release();
-
     if (g_pDepthStencilView) g_pDepthStencilView->Release();
     if (g_pDepthStencil) g_pDepthStencil->Release();
     if (g_pRenderTargetView) g_pRenderTargetView->Release();
     if (g_pSwapChain) g_pSwapChain->Release();
     if (g_pImmediateContext) g_pImmediateContext->Release();
     if (g_pd3dDevice) g_pd3dDevice->Release();
+
+    graphics->~Graphics();
 
 #ifdef DXTK_AUDIO
     g_audEngine.reset();
@@ -532,45 +466,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
 
 //--------------------------------------------------------------------------------------
-// Render a grid using PrimitiveBatch
-//--------------------------------------------------------------------------------------
-void DrawGrid(PrimitiveBatch<VertexPositionColor>& batch, FXMVECTOR xAxis, FXMVECTOR yAxis, FXMVECTOR origin, size_t xdivs, size_t ydivs, GXMVECTOR color) {
-    g_BatchEffect->Apply(g_pImmediateContext);
-
-    g_pImmediateContext->IASetInputLayout(g_pBatchInputLayout);
-
-    g_Batch->Begin();
-
-    xdivs = std::max<size_t>(1, xdivs);
-    ydivs = std::max<size_t>(1, ydivs);
-
-    for (size_t i = 0; i <= xdivs; ++i) {
-        float fPercent = float(i) / float(xdivs);
-        fPercent = (fPercent * 2.0f) - 1.0f;
-        XMVECTOR vScale = XMVectorScale(xAxis, fPercent);
-        vScale = XMVectorAdd(vScale, origin);
-
-        VertexPositionColor v1(XMVectorSubtract(vScale, yAxis), color);
-        VertexPositionColor v2(XMVectorAdd(vScale, yAxis), color);
-        batch.DrawLine(v1, v2);
-    }
-
-    for (size_t i = 0; i <= ydivs; i++) {
-        FLOAT fPercent = float(i) / float(ydivs);
-        fPercent = (fPercent * 2.0f) - 1.0f;
-        XMVECTOR vScale = XMVectorScale(yAxis, fPercent);
-        vScale = XMVectorAdd(vScale, origin);
-
-        VertexPositionColor v1(XMVectorSubtract(vScale, xAxis), color);
-        VertexPositionColor v2(XMVectorAdd(vScale, xAxis), color);
-        batch.DrawLine(v1, v2);
-    }
-
-    g_Batch->End();
-}
-
-
-//--------------------------------------------------------------------------------------
 // Render a frame
 //--------------------------------------------------------------------------------------
 void Render() {
@@ -621,45 +516,15 @@ void Render() {
     //
     g_pImmediateContext->ClearDepthStencilView(g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // Draw procedurally generated dynamic grid
-    const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
-    const XMVECTORF32 yaxis = { 0.f, 0.f, 20.f };
-    DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray);
-
-    // Draw sprite
-    g_Sprites->Begin(SpriteSortMode_Deferred);
-    //g_Sprites->Draw( g_pTextureRV2, XMFLOAT2(10, 75 ), nullptr, Colors::White );
-
-    g_Font->DrawString(g_Sprites.get(), cameraInput->getGreenTrackerString().c_str(), XMFLOAT2(10, 0), Colors::Green);
-    g_Font->DrawString(g_Sprites.get(), cameraInput->getRedTrackerString().c_str(), XMFLOAT2(10, 40), Colors::Red);
-
-    g_Sprites->End();
-
-    // Draw 3D objects
-    //XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation(-2.f, -2.f, 4.f));
-    XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getRedPosition().x - (frameSize.width / 2.f)) / 50.f,
+    XMMATRIX red = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getRedPosition().x - (frameSize.width / 2.f)) / 50.f,
         -(cameraInput->getRedPosition().y - (frameSize.height / 2.f)) / 50.f,
         max(cameraInput->getRedSize() / 30.f, 4.f)));
-    g_Shape->Draw(local, g_View, g_Projection, Colors::White, g_pTextureRV1);
 
-    /*XMVECTOR qid = XMQuaternionIdentity();
-    const XMVECTORF32 scale = { 0.05f, 0.05f, 0.05f };
-    //const XMVECTORF32 translate = { 3.f, -2.f, 4.f };
-    const XMVECTORF32 translate = { (tracker_green.x - (frameSize.width / 2.f)) / 50.f,
-    -(tracker_green.y - (frameSize.height / 2.f)) / 50.f,
-    4.f };
-    XMVECTOR rotate = XMQuaternionRotationRollPitchYaw(0, XM_PI/2.f, XM_PI/2.f);
-    local = XMMatrixMultiply(g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, translate));*/
-
-    local = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getGreenPosition().x - (frameSize.width / 2.f)) / 50.f,
+    XMMATRIX green = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getGreenPosition().x - (frameSize.width / 2.f)) / 50.f,
         -(cameraInput->getGreenPosition().y - (frameSize.height / 2.f)) / 50.f,
         max(cameraInput->getGreenSize() / 200.f, 4.f)));
 
-    g_Shape2->Draw(local, g_View, g_Projection, Colors::White, g_pTextureRV2);
-
-    //local = XMMatrixMultiply(g_World, XMMatrixTranslation(tracker_green.x / 100.f, tracker_green.y / 100.f, 4.f));
-    //g_Model->Draw( g_pImmediateContext, *g_States, local, g_View, g_Projection );
-
+    graphics->Render(&g_World, &g_View, &g_Projection, g_pImmediateContext, cameraInput->getGreenTrackerString(), cameraInput->getRedTrackerString(), &green, &red);
 
     //
     // Present our back buffer to our front buffer
