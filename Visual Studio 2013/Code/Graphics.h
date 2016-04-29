@@ -39,7 +39,7 @@ public:
 
     HRESULT Initialise(ID3D11Device *g_pd3dDevice, ID3D11DeviceContext *g_pImmediateContext, XMMATRIX *g_View, XMMATRIX *g_Projection);
 
-    void Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMMATRIX *ball_Green, XMMATRIX *ball_Red);
+    void Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMMATRIX *ball_Green, XMMATRIX *ball_Red, XMVECTOR *target_Pos);
 
 private:
     //--------------------------------------------------------------------------------------
@@ -51,8 +51,9 @@ private:
     std::unique_ptr<EffectFactory>                          g_FXFactory;
     std::unique_ptr<GeometricPrimitive>                     g_BallRed;
     std::unique_ptr<GeometricPrimitive>                     g_BallGreen;
-    std::unique_ptr<GeometricPrimitive>                     g_Floor;
-    std::unique_ptr<GeometricPrimitive>                     g_Pole;
+	std::unique_ptr<GeometricPrimitive>                     g_Floor;
+	std::unique_ptr<GeometricPrimitive>                     g_Pole;
+	std::unique_ptr<GeometricPrimitive>                     g_Target;
     std::unique_ptr<Model>                                  g_Model;
     std::unique_ptr<PrimitiveBatch<VertexPositionColor>>    g_Batch;
     std::unique_ptr<SpriteBatch>                            g_Sprites;
@@ -60,8 +61,9 @@ private:
 
     ID3D11ShaderResourceView*           g_pTextureRope = nullptr;
     ID3D11ShaderResourceView*           g_pTextureFloor = nullptr;
-    ID3D11ShaderResourceView*           g_pTextureWhite = nullptr;
-    ID3D11ShaderResourceView*           g_pTextureGlove = nullptr;
+	ID3D11ShaderResourceView*           g_pTextureWhite = nullptr;
+	ID3D11ShaderResourceView*           g_pTextureGlove = nullptr;
+	ID3D11ShaderResourceView*           g_pTextureTarget = nullptr;
     ID3D11InputLayout*                  g_pBatchInputLayout = nullptr;
 
     //--------------------------------------------------------------------------------------

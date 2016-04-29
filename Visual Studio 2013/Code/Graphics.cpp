@@ -29,8 +29,9 @@ Graphics::~Graphics() {
 
     if (g_pTextureRope) g_pTextureRope->Release();
     if (g_pTextureFloor) g_pTextureFloor->Release();
-    if (g_pTextureWhite) g_pTextureWhite->Release();
-    if (g_pTextureGlove) g_pTextureGlove->Release();
+	if (g_pTextureWhite) g_pTextureWhite->Release();
+	if (g_pTextureGlove) g_pTextureGlove->Release();
+	if (g_pTextureTarget) g_pTextureTarget->Release();
 
     if (g_pBatchInputLayout) g_pBatchInputLayout->Release();
 
@@ -69,10 +70,13 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
     g_BallGreen = GeometricPrimitive::CreateSphere(g_pImmediateContext, 2.f, 80.f, false);
 
     // Ring Floor
-    g_Floor = GeometricPrimitive::CreateCube(g_pImmediateContext, 1.f, false);
+	g_Floor = GeometricPrimitive::CreateCube(g_pImmediateContext, 1.f, false);
 
-    // Corner Poles
-    g_Pole = GeometricPrimitive::CreateCylinder(g_pImmediateContext, 1.f, 1.f, 32.f, false);
+	// Corner Poles
+	g_Pole = GeometricPrimitive::CreateCylinder(g_pImmediateContext, 1.f, 1.f, 32.f, false);
+
+	// Targets
+	g_Target = GeometricPrimitive::CreateCylinder(g_pImmediateContext, 1.f, 1.f, 32.f, false);
 
 #pragma endregion
 
@@ -95,7 +99,10 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
     if (FAILED(hr)) { return hr; }
 
     hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/glove.dds", nullptr, &g_pTextureGlove);
-    if (FAILED(hr)) { return hr; }
+	if (FAILED(hr)) { return hr; }
+
+	hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/target.dds", nullptr, &g_pTextureTarget);
+	if (FAILED(hr)) { return hr; }
 
 #pragma endregion
 
@@ -147,11 +154,11 @@ void Graphics::DrawGrid(PrimitiveBatch<VertexPositionColor>& batch, FXMVECTOR xA
 //--------------------------------------------------------------------------------------
 // Render all defined graphical objects
 //--------------------------------------------------------------------------------------
-void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMMATRIX *ball_Green, XMMATRIX *ball_Red) {
+void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMMATRIX *ball_Green, XMMATRIX *ball_Red, XMVECTOR *target_Pos) {
 
     // Draw procedurally generated dynamic grid
-    const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
-    const XMVECTORF32 yaxis = { 0.f, 0.f, 20.f };
+    //const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
+    //const XMVECTORF32 yaxis = { 0.f, 0.f, 20.f };
     //DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray, g_pImmediateContext);
 
 #pragma region Text
@@ -176,43 +183,47 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
     // Draw Scene
 
     // Draw Floor
-    XMMATRIX m_FloorTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, -8.f, 4.f }, XMVECTOR{ 0.f, 0.f, 0.f }, XMVECTOR{ 50.f, 1.f, 100.f });
+    XMMATRIX m_FloorTransform = GetTransformMatrix(g_World, { 0.f, -8.f, 4.f }, { 0.f, 0.f, 0.f }, { 50.f, 1.f, 100.f });
     g_Floor->Draw(m_FloorTransform, *g_View, *g_Projection, Colors::CornflowerBlue, g_pTextureFloor);
 
     // Draw Poles
-    XMMATRIX m_PoleTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, 0.f, 25.f }, XMVECTOR{ 0.0f, 0.0f, 0.0f }, XMVECTOR{ 1.f, 5.f, 1.f });
+    XMMATRIX m_PoleTransform = GetTransformMatrix(g_World, { 13.f, 0.f, 25.f }, { 0.0f, 0.0f, 0.0f }, { 1.f, 5.f, 1.f });
     g_Pole->Draw(m_PoleTransform, *g_View, *g_Projection, Colors::DodgerBlue, g_pTextureWhite);
-    m_PoleTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, 0.f, 25.f }, XMVECTOR{ 0.0f, 0.0f, 0.0f }, XMVECTOR{ 1.f, 5.f, 1.f });
+    m_PoleTransform = GetTransformMatrix(g_World, { -13.f, 0.f, 25.f }, { 0.0f, 0.0f, 0.0f }, { 1.f, 5.f, 1.f });
     g_Pole->Draw(m_PoleTransform, *g_View, *g_Projection, Colors::Red, g_pTextureWhite);
 
     // Draw Ropes
     // Back
-    XMMATRIX m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, -1.5f, 25.f }, XMVECTOR{ XM_PIDIV2, 0.f, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    XMMATRIX m_RopeTransform = GetTransformMatrix(g_World, { 0.f, -1.5f, 25.f }, { XM_PIDIV2, 0.f, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, -0.5f, 25.f }, XMVECTOR{ XM_PIDIV2, 0.f, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { 0.f, -0.5f, 25.f }, { XM_PIDIV2, 0.f, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::DodgerBlue, g_pTextureRope);
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, 0.5f, 25.f }, XMVECTOR{ XM_PIDIV2, 0.f, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { 0.f, 0.5f, 25.f }, { XM_PIDIV2, 0.f, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::White, g_pTextureRope);
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 0.f, 1.5f, 25.f }, XMVECTOR{ XM_PIDIV2, 0.f, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { 0.f, 1.5f, 25.f }, { XM_PIDIV2, 0.f, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
     // Left
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, -1.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { -13.f, -1.5f, 12.5f }, { XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, -0.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { -13.f, -0.5f, 12.5f }, { XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::DodgerBlue, g_pTextureRope);
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, 0.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { -13.f, 0.5f, 12.5f }, { XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::White, g_pTextureRope);
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ -13.f, 1.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { -13.f, 1.5f, 12.5f }, { XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
     // Right
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, -1.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { 13.f, -1.5f, 12.5f }, { XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, -0.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { 13.f, -0.5f, 12.5f }, { XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::DodgerBlue, g_pTextureRope);
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, 0.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { 13.f, 0.5f, 12.5f }, { XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::White, g_pTextureRope);
-    m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, 1.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
+    m_RopeTransform = GetTransformMatrix(g_World, { 13.f, 1.5f, 12.5f }, { XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
+
+	// Draw Target
+	XMMATRIX m_TargetTransform = GetTransformMatrix(g_World, *target_Pos, { -XM_PIDIV2, 0.0f, 0.0f }, { 3.f, 0.3f, 3.f });
+	g_Target->Draw(m_TargetTransform, *g_View, *g_Projection, Colors::White, g_pTextureTarget);
 
 #pragma endregion
 

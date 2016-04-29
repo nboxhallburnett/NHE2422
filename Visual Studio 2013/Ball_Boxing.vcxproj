@@ -389,6 +389,7 @@
     <Image Include="Textures\red.dds" />
     <Image Include="Textures\rope.dds" />
     <Image Include="Textures\seafloor.dds" />
+    <Image Include="Textures\target.dds" />
     <Image Include="Textures\Tiny_skin.dds" />
     <Image Include="Textures\white.dds" />
     <Image Include="Textures\windowslogo.dds" />

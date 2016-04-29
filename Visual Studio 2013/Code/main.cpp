@@ -11,6 +11,8 @@
 #include <iostream>
 #include <windows.h>
 #include "resource.h"
+#include <cstdlib>
+#include <ctime>
 
 #include <d3d11.h>
 
@@ -62,6 +64,15 @@ XMMATRIX        g_Projection;
 Graphics*       graphics;
 Tracker*        cameraInput;
 
+bool			new_Target = true;
+XMVECTOR		target_Pos;
+float			x_Lo = -5.f,
+				x_Hi = 5.f,
+				y_Lo = -2.f,
+				y_Hi = 2.f,
+				z_Lo = 10.f,
+				z_Hi = 25.f;
+
 //--------------------------------------------------------------------------------------
 // Forward declarations
 //--------------------------------------------------------------------------------------
@@ -70,6 +81,7 @@ HRESULT InitDevice();
 void CleanupDevice();
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 void Render();
+float randomNumber(float LO, float HI);
 
 
 //--------------------------------------------------------------------------------------
@@ -95,6 +107,9 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     static DWORD previousTime = timeGetTime();
     static const float targetFramerate = 30.0f;
     static const float maxTimeStep = 1.0f / targetFramerate;
+
+	// Seed rand
+	srand(static_cast <unsigned> (time(0)));
 
     while (WM_QUIT != msg.message) {
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -508,16 +523,43 @@ void Render() {
     // Calculate the position for the red ball
     XMMATRIX red = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getRedPosition().x - (frameSize.width / 2.f)) / 50.f,
         -(cameraInput->getRedPosition().y - (frameSize.height / 2.f)) / 50.f,
-        max(cameraInput->getRedSize() / 80.f, 4.f)));
+        max(cameraInput->getRedSize() / 200.f, 4.f)));
 
     // Calculate the position for the green ball
     XMMATRIX green = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getGreenPosition().x - (frameSize.width / 2.f)) / 50.f,
         -(cameraInput->getGreenPosition().y - (frameSize.height / 2.f)) / 50.f,
         max(cameraInput->getGreenSize() / 200.f, 4.f)));
 
+	if (new_Target) {
+		target_Pos = { randomNumber(x_Lo, x_Hi), randomNumber(y_Lo, y_Hi), randomNumber(z_Lo, z_Hi) };
+		new_Target = false;
+	}
+
+	Collision detection on targets, count hits for score, timed hits - the more you hit, the less time you have to hit them. AND HIS NAME IS
+
+	/*
+	
+	if (position.x > collisionObjects[i].vMin.x && position.x < collisionObjects[i].vMax.x
+		&& position.y > collisionObjects[i].vMin.y && 20.0f < collisionObjects[i].vMax.y
+		&& position.z > collisionObjects[i].vMin.z && position.z < collisionObjects[i].vMax.z) 
+	{
+		move = FALSE;
+		if (i == g_iLeftDoor)
+			g_bColLeft = TRUE;
+		if (i == g_iRightDoor)
+			g_bColRight = TRUE;
+	}
+
+	*/
+
+
     // Render everything defined in the graphics class
-    graphics->Render(&g_World, &g_View, &g_Projection, g_pImmediateContext, cameraInput->getGreenTrackerString(), cameraInput->getRedTrackerString(), &green, &red);
+    graphics->Render(&g_World, &g_View, &g_Projection, g_pImmediateContext, cameraInput->getGreenTrackerString(), cameraInput->getRedTrackerString(), &green, &red, &target_Pos);
 
     // Present our back buffer to our front buffer
     g_pSwapChain->Present(0, 0);
+}
+
+float randomNumber(float LO, float HI) {
+	return LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO)));
 }
