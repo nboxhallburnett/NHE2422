@@ -31,6 +31,15 @@
     <Image Include="Textures\white.dds">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Textures\fibers.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Textures\glove.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Textures\rope.dds">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">
