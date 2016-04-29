@@ -2,6 +2,7 @@
 // File: main.cpp
 //
 // This project is based off of the SimpleSample DirectXTK sample app.
+// Expanded upon by Nathan Boxhall-Burnett (u1254544)
 //
 // https://github.com/nboxhallburnett/NHE2422
 // http://go.microsoft.com/fwlink/?LinkId=248929
@@ -18,7 +19,6 @@
 #include <ctime>
 
 #include <d3d11.h>
-
 #include <dinput.h>
 
 #include <math.h>
@@ -116,6 +116,7 @@ bool                ReadKeyboard();
 // loop. Idle time is used to render the scene.
 //--------------------------------------------------------------------------------------
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow) {
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -168,13 +169,14 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     CleanupDevice();
 
     return (int)msg.wParam;
-}
 
+}
 
 //--------------------------------------------------------------------------------------
 // Register class and create window
 //--------------------------------------------------------------------------------------
 HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow) {
+
     // Register class
     WNDCLASSEX wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
@@ -212,13 +214,14 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow) {
     }
 
     return S_OK;
-}
 
+}
 
 //--------------------------------------------------------------------------------------
 // Create Direct3D device and swap chain
 //--------------------------------------------------------------------------------------
 HRESULT InitDevice() {
+
     HRESULT hr = S_OK;
 
     RECT rc;
@@ -231,16 +234,14 @@ HRESULT InitDevice() {
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-    D3D_DRIVER_TYPE driverTypes[] =
-    {
+    D3D_DRIVER_TYPE driverTypes[] = {
         D3D_DRIVER_TYPE_HARDWARE,
         D3D_DRIVER_TYPE_WARP,
         D3D_DRIVER_TYPE_REFERENCE,
     };
     UINT numDriverTypes = ARRAYSIZE(driverTypes);
 
-    D3D_FEATURE_LEVEL featureLevels[] =
-    {
+    D3D_FEATURE_LEVEL featureLevels[] = {
         D3D_FEATURE_LEVEL_11_0,
         D3D_FEATURE_LEVEL_10_1,
         D3D_FEATURE_LEVEL_10_0,
@@ -406,13 +407,14 @@ HRESULT InitDevice() {
     }
 
     return S_OK;
-}
 
+}
 
 //--------------------------------------------------------------------------------------
 // Clean up the objects we've created
 //--------------------------------------------------------------------------------------
 void CleanupDevice() {
+
     if (g_pImmediateContext) g_pImmediateContext->ClearState();
 
     if (g_pDepthStencilView) g_pDepthStencilView->Release();
@@ -441,13 +443,14 @@ void CleanupDevice() {
         m_directInput->Release();
         m_directInput = 0;
     }
-}
 
+}
 
 //--------------------------------------------------------------------------------------
 // Called every time the application receives a message
 //--------------------------------------------------------------------------------------
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+
     PAINTSTRUCT ps;
     HDC hdc;
 
@@ -550,12 +553,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     }
 
     return 0;
+
 }
 
 //--------------------------------------------------------------------------------------
 // Render a frame
 //--------------------------------------------------------------------------------------
 void Render(float deltaTime) {
+
     // Update our time
     static float t = 0.0f;
     static float dt = 0.f;
@@ -617,16 +622,16 @@ void Render(float deltaTime) {
         if (isColliding(&red_pos, &ball_bounds, &target_Pos, &target_bounds) || isColliding(&green_pos, &ball_bounds, &target_Pos, &target_bounds)) {
             new_Target = true;
             scorePoint();
+
+            // Play the hit effect
+            g_effectHit->Stop();
+            g_effectHit->Play();
         }
 
         // If the target has been hit, set a new place for it
         if (new_Target) {
             target_Pos = { randomNumber(x_min, x_max), randomNumber(y_min, y_max), randomNumber(z_min, z_max) };
             new_Target = false;
-
-            // Play the hit effect
-            g_effectHit->Stop();
-            g_effectHit->Play();
         }
 
         current_game_time -= deltaTime;
@@ -655,12 +660,14 @@ void Render(float deltaTime) {
 
     // Present our back buffer to our front buffer
     g_pSwapChain->Present(0, 0);
+
 }
 
 //--------------------------------------------------------------------------------------
 // Returns whether or not two objects are colliding
 //--------------------------------------------------------------------------------------
 bool isColliding(XMVECTOR *obj1, XMVECTOR *obj1bounds, XMVECTOR *obj2, XMVECTOR *obj2bounds) {
+
     XMVECTOR vMin1, vMax1, vMin2, vMax2;
 
     // Calculate the minimum and maximum points for both objects bounding boxes
@@ -696,30 +703,35 @@ bool isColliding(XMVECTOR *obj1, XMVECTOR *obj1bounds, XMVECTOR *obj2, XMVECTOR 
     }
 
     return false;
+
 }
 
 //--------------------------------------------------------------------------------------
 // Return a random number between two bounds
 //--------------------------------------------------------------------------------------
 float randomNumber(float lower_bound, float upper_bound) {
+
     return lower_bound + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (upper_bound - lower_bound)));
+
 }
 
 //--------------------------------------------------------------------------------------
 // Update player score and set the set the updated score timer
 //--------------------------------------------------------------------------------------
 void scorePoint() {
+
     score += (int)(current_game_time * 10.f);
     current_game_time = next_game_time;
     next_game_time -= next_game_time / 10.f;
+
 }
 
 //--------------------------------------------------------------------------------------
 // Read the input from the keyboard and update the buffer
 //--------------------------------------------------------------------------------------
 bool ReadKeyboard() {
-    HRESULT result;
 
+    HRESULT result;
 
     // Read the keyboard device.
     result = m_keyboard->GetDeviceState(sizeof(m_keyboardState), (LPVOID)&m_keyboardState);
@@ -733,4 +745,5 @@ bool ReadKeyboard() {
     }
 
     return true;
+
 }

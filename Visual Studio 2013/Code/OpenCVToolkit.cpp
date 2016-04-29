@@ -33,8 +33,8 @@ const int thre = 100;
 // Flood fill local tolerance
 const int tolerance = 200;
 
-void regionMark(const cv::Mat &frame, const cv::MatND &hsv_hist, cv::Mat &markMap)
-{
+void regionMark(const cv::Mat &frame, const cv::MatND &hsv_hist, cv::Mat &markMap) {
+
     // Back projection operation
     cv::Mat hsv;
     cv::Mat backProject;
@@ -64,13 +64,13 @@ void regionMark(const cv::Mat &frame, const cv::MatND &hsv_hist, cv::Mat &markMa
     int index = thre + 1;
     vector<cv::Point> markLoc;
     findNonZero(maskROI, markLoc);
-    while (markLoc.size() != 0)
-    {
+    while (markLoc.size() != 0) {
         cv::Point seed = markLoc[0];
         floodFill(markMap, inverseMask, seed, cv::Scalar(static_cast<uchar>(index++)), (cv::Rect*)0, cv::Scalar(tolerance), cv::Scalar(tolerance), 4 | (static_cast<uchar>(255) << 8));
         bitwise_not(inverseMaskROI, maskROI);
         findNonZero(maskROI, markLoc);
     }
+
 }
 
 void updateTrackAndSize(const cv::Mat &frame, const cv::MatND &hsv_hist, cv::Point &point, cv::Size &size) {
@@ -92,15 +92,13 @@ void updateTrackAndSize(const cv::Mat &frame, const cv::MatND &hsv_hist, cv::Poi
     cv::Rect bounding_rect;
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(openedImg, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-    for (int i = 0; i < contours.size(); i++)           // Iterate through each contour
-    {
+    for (int i = 0; i < contours.size(); i++) {         // Iterate through each contour
         double a = cv::contourArea(contours[i]);        // Find the area of contour
         if (a > largest_area) {
             largest_area = a;
             largest_contour_index = i;                  //Store the index of largest contour
             bounding_rect = boundingRect(contours[i]);  // Find the bounding rectangle for biggest contour
         }
-
     }
     size.width = bounding_rect.width;
     size.height = bounding_rect.height;
@@ -108,4 +106,5 @@ void updateTrackAndSize(const cv::Mat &frame, const cv::MatND &hsv_hist, cv::Poi
     //Scale object centre back to its original size
     point.x = bounding_rect.x + bounding_rect.width / 2;
     point.y = bounding_rect.y + bounding_rect.height / 2;
+
 }

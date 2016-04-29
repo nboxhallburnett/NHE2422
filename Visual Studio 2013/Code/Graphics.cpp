@@ -42,6 +42,7 @@ Graphics::~Graphics() {
 // Initialise everything
 //--------------------------------------------------------------------------------------
 HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * g_pImmediateContext, XMMATRIX *g_View, XMMATRIX *g_Projection) {
+
     HRESULT hr = S_OK;
 
     {
@@ -115,6 +116,7 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
     g_BatchEffect->SetProjection(*g_Projection);
 
     return hr;
+
 }
 
 
@@ -122,6 +124,7 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
 // Render a grid using PrimitiveBatch
 //--------------------------------------------------------------------------------------
 void Graphics::DrawGrid(PrimitiveBatch<VertexPositionColor>& batch, FXMVECTOR xAxis, FXMVECTOR yAxis, FXMVECTOR origin, size_t xdivs, size_t ydivs, GXMVECTOR color, ID3D11DeviceContext *g_pImmediateContext) {
+
     g_BatchEffect->Apply(g_pImmediateContext);
 
     g_pImmediateContext->IASetInputLayout(g_pBatchInputLayout);
@@ -154,6 +157,7 @@ void Graphics::DrawGrid(PrimitiveBatch<VertexPositionColor>& batch, FXMVECTOR xA
     }
 
     g_Batch->End();
+
 }
 
 //--------------------------------------------------------------------------------------
@@ -178,7 +182,6 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
         g_Font->DrawString(g_Sprites.get(), getTimeString(time).c_str(), XMFLOAT2(1120, 10), Colors::WhiteSmoke);
         g_Sprites->End();
     }
-
 
 #pragma endregion
 
@@ -254,19 +257,30 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
 // from provided Position, Rotation, and Scale Vectors
 //--------------------------------------------------------------------------------------
 XMMATRIX Graphics::GetTransformMatrix(XMMATRIX *g_World, XMVECTOR position, XMVECTOR rotation, XMVECTOR scale) {
+
     XMVECTOR qid = XMQuaternionIdentity();
     XMVECTOR rotate = XMQuaternionRotationRollPitchYawFromVector(rotation);
     return XMMatrixMultiply(*g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, position));
+
 }
 
+//--------------------------------------------------------------------------------------
+// Returns a wstring formatted to contain the current score
+//--------------------------------------------------------------------------------------
 std::wstring Graphics::getScoreString(int score) {
+
     std::string scoreStr = "Score: " + std::to_string(score);
     return std::wstring(scoreStr.begin(), scoreStr.end());
+
 }
 
-
+//--------------------------------------------------------------------------------------
+// Returns a wstring formatted to contain the remaining game time
+//--------------------------------------------------------------------------------------
 std::wstring Graphics::getTimeString(float time) {
+
     float roundedTime = roundf(time * 10.f) / 10;
     std::string timeStr = "Time: " + std::to_string(roundedTime).substr(0, 4);
     return std::wstring(timeStr.begin(), timeStr.end());
+
 }
