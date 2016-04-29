@@ -1,0 +1,1 @@
+MakeSpriteFont "Installed Font Name" output.spritefont /FontSize:22 /characterregion:0x0-0xFF
