@@ -386,6 +386,7 @@
     <Image Include="Textures\fibers.dds" />
     <Image Include="Textures\glove.dds" />
     <Image Include="Textures\green.dds" />
+    <Image Include="Textures\overlay.dds" />
     <Image Include="Textures\red.dds" />
     <Image Include="Textures\rope.dds" />
     <Image Include="Textures\seafloor.dds" />

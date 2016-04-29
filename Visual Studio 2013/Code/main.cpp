@@ -7,6 +7,9 @@
 // http://go.microsoft.com/fwlink/?LinkId=248929
 //--------------------------------------------------------------------------------------
 
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
+
 #define NOMINMAX
 #include <iostream>
 #include <windows.h>
@@ -15,6 +18,8 @@
 #include <ctime>
 
 #include <d3d11.h>
+
+#include <dinput.h>
 
 #include <math.h>
 #include <algorithm>
@@ -44,6 +49,10 @@ ID3D11RenderTargetView*             g_pRenderTargetView = nullptr;
 ID3D11Texture2D*                    g_pDepthStencil = nullptr;
 ID3D11DepthStencilView*             g_pDepthStencilView = nullptr;
 
+IDirectInput8* m_directInput = 0;
+IDirectInputDevice8* m_keyboard = 0;
+unsigned char m_keyboardState[256];
+
 #ifdef DXTK_AUDIO
 std::unique_ptr<DirectX::AudioEngine>                   g_audEngine;
 std::unique_ptr<DirectX::WaveBank>                      g_waveBank;
@@ -64,25 +73,39 @@ XMMATRIX        g_Projection;
 Graphics*       graphics;
 Tracker*        cameraInput;
 
-bool			new_Target = true;
-XMVECTOR		target_Pos;
-float			x_Lo = -5.f,
-				x_Hi = 5.f,
-				y_Lo = -2.f,
-				y_Hi = 2.f,
-				z_Lo = 10.f,
-				z_Hi = 25.f;
+// Target positioning
+bool            playing = true;
+int             score = 0;
+float           current_game_time = 10.f;
+float           next_game_time = 9.f;
+bool            new_Target = true;
+XMVECTOR        target_Pos;
+float           x_min = -5.f;
+float           x_max = 5.f;
+float           y_min = -2.f;
+float           y_max = 2.f;
+float           z_min = 10.f;
+float           z_max = 25.f;
+XMVECTOR        red_pos;
+XMVECTOR        green_pos;
+XMVECTOR        ball_bounds = { 1.f, 1.f, 1.f };
+XMVECTOR        target_bounds = { 1.5f, 1.5f, 0.15f };
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
 //--------------------------------------------------------------------------------------
-HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
-HRESULT InitDevice();
-void CleanupDevice();
+HRESULT             InitWindow(HINSTANCE hInstance, int nCmdShow);
+HRESULT             InitDevice();
+void                CleanupDevice();
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-void Render();
-float randomNumber(float LO, float HI);
 
+void                Render(float deltaTime);
+
+bool                isColliding(XMVECTOR *obj1, XMVECTOR *obj1bounds, XMVECTOR *obj2, XMVECTOR *obj2bounds);
+float               randomNumber(float lower_bound, float upper_bound);
+void                scorePoint();
+
+bool                ReadKeyboard();
 
 //--------------------------------------------------------------------------------------
 // Entry point to the program. Initializes everything and goes into a message processing 
@@ -108,26 +131,33 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     static const float targetFramerate = 30.0f;
     static const float maxTimeStep = 1.0f / targetFramerate;
 
-	// Seed rand
-	srand(static_cast <unsigned> (time(0)));
+    // Seed rand
+    srand(static_cast <unsigned> (time(0)));
 
     while (WM_QUIT != msg.message) {
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
-        }
-        else {
+        } else {
             DWORD currentTime = timeGetTime();
             float deltaTime = (currentTime - previousTime) / 1000.0f;
             previousTime = currentTime;
 
             // Cap the delta time to the max time step (useful if your 
             // debugging and you don't want the deltaTime value to explode.
-            deltaTime = std::min<float>(deltaTime, maxTimeStep);
+            // deltaTime = std::min<float>(deltaTime, maxTimeStep);
+
+            ReadKeyboard();
+
+            // If Esc is pressed, exit the game
+            if (m_keyboardState[DIK_ESCAPE] & 0x80) {
+                msg.message = WM_QUIT;
+            }
+
 
             cameraInput->UpdateCamera();
 
-            Render();
+            Render(deltaTime);
         }
     }
 
@@ -335,6 +365,36 @@ HRESULT InitDevice() {
 
 #endif // DXTK_AUDIO
 
+    // Initialize the main direct input interface.
+    hr = DirectInput8Create(g_hInst, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&m_directInput, NULL);
+    if (FAILED(hr)) {
+        return hr;
+    }
+
+    // Initialize the direct input interface for the keyboard.
+    hr = m_directInput->CreateDevice(GUID_SysKeyboard, &m_keyboard, NULL);
+    if (FAILED(hr)) {
+        return hr;
+    }
+
+    // Set the data format.  In this case since it is a keyboard we can use the predefined data format.
+    hr = m_keyboard->SetDataFormat(&c_dfDIKeyboard);
+    if (FAILED(hr)) {
+        return hr;
+    }
+
+    // Set the cooperative level of the keyboard to not share with other programs.
+    hr = m_keyboard->SetCooperativeLevel(g_hWnd, DISCL_FOREGROUND | DISCL_EXCLUSIVE);
+    if (FAILED(hr)) {
+        return hr;
+    }
+
+    // Now acquire the keyboard.
+    hr = m_keyboard->Acquire();
+    if (FAILED(hr)) {
+        return hr;
+    }
+
     return S_OK;
 }
 
@@ -358,6 +418,19 @@ void CleanupDevice() {
 #ifdef DXTK_AUDIO
     g_audEngine.reset();
 #endif
+
+    // Release the keyboard.
+    if (m_keyboard) {
+        m_keyboard->Unacquire();
+        m_keyboard->Release();
+        m_keyboard = 0;
+    }
+
+    // Release the main interface to direct input.
+    if (m_directInput) {
+        m_directInput->Release();
+        m_directInput = 0;
+    }
 }
 
 
@@ -444,8 +517,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             if (!g_audEngine->IsAudioDevicePresent()) {
                 PostMessage(g_hWnd, WM_USER, 0, 0);
             }
-        }
-        else if (wParam == 2) {
+        } else if (wParam == 2) {
             if (g_audEngine->IsCriticalError()) {
                 PostMessage(g_hWnd, WM_USER, 0, 0);
             }
@@ -470,18 +542,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     return 0;
 }
 
-
 //--------------------------------------------------------------------------------------
 // Render a frame
 //--------------------------------------------------------------------------------------
-void Render() {
+void Render(float deltaTime) {
     // Update our time
     static float t = 0.0f;
     static float dt = 0.f;
     if (g_driverType == D3D_DRIVER_TYPE_REFERENCE) {
         t += (float)XM_PI * 0.0125f;
-    }
-    else {
+    } else {
         static uint64_t dwTimeStart = 0;
         static uint64_t dwTimeLast = 0;
         uint64_t dwTimeCur = GetTickCount64();
@@ -520,46 +590,126 @@ void Render() {
     // Clear the depth buffer to 1.0 (max depth)
     g_pImmediateContext->ClearDepthStencilView(g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // Calculate the position for the red ball
-    XMMATRIX red = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getRedPosition().x - (frameSize.width / 2.f)) / 50.f,
-        -(cameraInput->getRedPosition().y - (frameSize.height / 2.f)) / 50.f,
-        max(cameraInput->getRedSize() / 200.f, 4.f)));
+    //------------------------------------
+    // Update game logic
+    //------------------------------------
 
-    // Calculate the position for the green ball
-    XMMATRIX green = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getGreenPosition().x - (frameSize.width / 2.f)) / 50.f,
-        -(cameraInput->getGreenPosition().y - (frameSize.height / 2.f)) / 50.f,
-        max(cameraInput->getGreenSize() / 200.f, 4.f)));
+    if (playing) {
+        red_pos = { (cameraInput->getRedPosition().x - (frameSize.width / 2.f)) / 50.f,
+            -(cameraInput->getRedPosition().y - (frameSize.height / 2.f)) / 50.f,
+            max(cameraInput->getRedSize() / 200.f, 4.f) };
 
-	if (new_Target) {
-		target_Pos = { randomNumber(x_Lo, x_Hi), randomNumber(y_Lo, y_Hi), randomNumber(z_Lo, z_Hi) };
-		new_Target = false;
-	}
+        green_pos = { (cameraInput->getGreenPosition().x - (frameSize.width / 2.f)) / 50.f,
+            -(cameraInput->getGreenPosition().y - (frameSize.height / 2.f)) / 50.f,
+            max(cameraInput->getGreenSize() / 200.f, 4.f) };
 
-	Collision detection on targets, count hits for score, timed hits - the more you hit, the less time you have to hit them. AND HIS NAME IS
+        // If you hit the target, reset its position and give yourself some points
+        if (isColliding(&red_pos, &ball_bounds, &target_Pos, &target_bounds) || isColliding(&green_pos, &ball_bounds, &target_Pos, &target_bounds)) {
+            new_Target = true;
+            scorePoint();
+        }
 
-	/*
-	
-	if (position.x > collisionObjects[i].vMin.x && position.x < collisionObjects[i].vMax.x
-		&& position.y > collisionObjects[i].vMin.y && 20.0f < collisionObjects[i].vMax.y
-		&& position.z > collisionObjects[i].vMin.z && position.z < collisionObjects[i].vMax.z) 
-	{
-		move = FALSE;
-		if (i == g_iLeftDoor)
-			g_bColLeft = TRUE;
-		if (i == g_iRightDoor)
-			g_bColRight = TRUE;
-	}
+        // If the target has been hit, set a new place for it
+        if (new_Target) {
+            target_Pos = { randomNumber(x_min, x_max), randomNumber(y_min, y_max), randomNumber(z_min, z_max) };
+            new_Target = false;
+        }
 
-	*/
+        current_game_time -= deltaTime;
 
+        if (current_game_time <= 0.f) {
+            current_game_time = 0.f;
+            playing = false;
+        }
+    } else {
+        // Press space to start a new game
+        if (m_keyboardState[DIK_SPACE] & 0x80) {
+            playing = true;
+            new_Target = true;
+            current_game_time = 10.f;
+            next_game_time = 9.f;
+            score = 0;
+        }
+    }
 
     // Render everything defined in the graphics class
-    graphics->Render(&g_World, &g_View, &g_Projection, g_pImmediateContext, cameraInput->getGreenTrackerString(), cameraInput->getRedTrackerString(), &green, &red, &target_Pos);
+    graphics->Render(&g_World, &g_View, &g_Projection, g_pd3dDevice, g_pImmediateContext, cameraInput->getGreenTrackerString(), cameraInput->getRedTrackerString(), &green_pos, &red_pos, &target_Pos, score, current_game_time, playing);
 
     // Present our back buffer to our front buffer
     g_pSwapChain->Present(0, 0);
 }
 
-float randomNumber(float LO, float HI) {
-	return LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO)));
+//--------------------------------------------------------------------------------------
+// Returns whether or not two objects are colliding
+//--------------------------------------------------------------------------------------
+bool isColliding(XMVECTOR *obj1, XMVECTOR *obj1bounds, XMVECTOR *obj2, XMVECTOR *obj2bounds) {
+    XMVECTOR vMin1, vMax1, vMin2, vMax2;
+
+    // Calculate the minimum and maximum points for both objects bounding boxes
+
+    vMin1 = { XMVectorGetX(*obj1) - (XMVectorGetX(*obj1bounds) / 2.f),
+        XMVectorGetY(*obj1) - (XMVectorGetY(*obj1bounds) / 2.f),
+        XMVectorGetZ(*obj1) - (XMVectorGetZ(*obj1bounds) / 2.f) };
+
+    vMax1 = { XMVectorGetX(*obj1) + (XMVectorGetX(*obj1bounds) / 2.f),
+        XMVectorGetY(*obj1) + (XMVectorGetY(*obj1bounds) / 2.f),
+        XMVectorGetZ(*obj1) + (XMVectorGetZ(*obj1bounds) / 2.f) };
+
+    vMin2 = { XMVectorGetX(*obj2) - (XMVectorGetX(*obj2bounds) / 2.f),
+        XMVectorGetY(*obj2) - (XMVectorGetY(*obj2bounds) / 2.f),
+        XMVectorGetZ(*obj2) - (XMVectorGetZ(*obj2bounds) / 2.f) };
+
+    vMax2 = { XMVectorGetX(*obj2) + (XMVectorGetX(*obj2bounds) / 2.f),
+        XMVectorGetY(*obj2) + (XMVectorGetY(*obj2bounds) / 2.f),
+        XMVectorGetZ(*obj2) + (XMVectorGetZ(*obj2bounds) / 2.f) };
+
+    // If either of them overlap, we have a collision
+
+    if (XMVectorGetX(vMin1) > XMVectorGetX(vMin2) && XMVectorGetX(vMin1) < XMVectorGetX(vMax2)
+        && XMVectorGetY(vMin1) > XMVectorGetY(vMin2) && XMVectorGetY(vMin1) < XMVectorGetY(vMax2)
+        && XMVectorGetZ(vMin1) > XMVectorGetZ(vMin2) && XMVectorGetZ(vMin1) < XMVectorGetZ(vMax2)) {
+        return true;
+    }
+
+    if (XMVectorGetX(vMax1) > XMVectorGetX(vMin2) && XMVectorGetX(vMax1) < XMVectorGetX(vMax2)
+        && XMVectorGetY(vMax1) > XMVectorGetY(vMin2) && XMVectorGetY(vMax1) < XMVectorGetY(vMax2)
+        && XMVectorGetZ(vMax1) > XMVectorGetZ(vMin2) && XMVectorGetZ(vMax1) < XMVectorGetZ(vMax2)) {
+        return true;
+    }
+
+    return false;
+}
+
+//--------------------------------------------------------------------------------------
+// Return a random number between two bounds
+//--------------------------------------------------------------------------------------
+float randomNumber(float lower_bound, float upper_bound) {
+    return lower_bound + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (upper_bound - lower_bound)));
+}
+
+//--------------------------------------------------------------------------------------
+// Update player score and set the set the updated score timer
+//--------------------------------------------------------------------------------------
+void scorePoint() {
+    score += (int)(current_game_time * 10.f);
+    current_game_time = next_game_time;
+    next_game_time -= next_game_time / 10.f;
+}
+
+bool ReadKeyboard() {
+    HRESULT result;
+
+
+    // Read the keyboard device.
+    result = m_keyboard->GetDeviceState(sizeof(m_keyboardState), (LPVOID)&m_keyboardState);
+    if (FAILED(result)) {
+        // If the keyboard lost focus or was not acquired then try to get control back.
+        if ((result == DIERR_INPUTLOST) || (result == DIERR_NOTACQUIRED)) {
+            m_keyboard->Acquire();
+        } else {
+            return false;
+        }
+    }
+
+    return true;
 }

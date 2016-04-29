@@ -43,6 +43,9 @@
     <Image Include="Textures\target.dds">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Textures\overlay.dds">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">

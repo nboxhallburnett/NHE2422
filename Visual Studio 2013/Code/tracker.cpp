@@ -91,7 +91,7 @@ void Tracker::ShowCameraWindow() {
 //--------------------------------------------------------------------------------------
 std::string Tracker::getTrackerString(std::string col, cv::Point point, cv::Size size) {
     std::ostringstream str;
-    str << col << " Ball: x=" << point.x << " y=" << point.y << " size: " << size.area();
+    str << col << " Ball - x: " << point.x << " y: " << point.y << " size: " << size.area();
     return str.str();
 }
 

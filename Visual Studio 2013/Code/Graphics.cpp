@@ -29,9 +29,10 @@ Graphics::~Graphics() {
 
     if (g_pTextureRope) g_pTextureRope->Release();
     if (g_pTextureFloor) g_pTextureFloor->Release();
-	if (g_pTextureWhite) g_pTextureWhite->Release();
-	if (g_pTextureGlove) g_pTextureGlove->Release();
-	if (g_pTextureTarget) g_pTextureTarget->Release();
+    if (g_pTextureWhite) g_pTextureWhite->Release();
+    if (g_pTextureGlove) g_pTextureGlove->Release();
+    if (g_pTextureTarget) g_pTextureTarget->Release();
+    if (g_pTextureOverlay) g_pTextureOverlay->Release();
 
     if (g_pBatchInputLayout) g_pBatchInputLayout->Release();
 
@@ -59,7 +60,8 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
 
 #pragma region Fonts
 
-    g_Font.reset(new SpriteFont(g_pd3dDevice, L"Fonts/italic.spritefont"));
+    g_Font.reset(new SpriteFont(g_pd3dDevice, L"Fonts/sports.spritefont"));
+    g_FontBig.reset(new SpriteFont(g_pd3dDevice, L"Fonts/sportsBig.spritefont"));
 
 #pragma endregion
 
@@ -70,13 +72,13 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
     g_BallGreen = GeometricPrimitive::CreateSphere(g_pImmediateContext, 2.f, 80.f, false);
 
     // Ring Floor
-	g_Floor = GeometricPrimitive::CreateCube(g_pImmediateContext, 1.f, false);
+    g_Floor = GeometricPrimitive::CreateCube(g_pImmediateContext, 1.f, false);
 
-	// Corner Poles
-	g_Pole = GeometricPrimitive::CreateCylinder(g_pImmediateContext, 1.f, 1.f, 32.f, false);
+    // Corner Poles
+    g_Pole = GeometricPrimitive::CreateCylinder(g_pImmediateContext, 1.f, 1.f, 32.f, false);
 
-	// Targets
-	g_Target = GeometricPrimitive::CreateCylinder(g_pImmediateContext, 1.f, 1.f, 32.f, false);
+    // Targets
+    g_Target = GeometricPrimitive::CreateCylinder(g_pImmediateContext, 1.f, 1.f, 32.f, false);
 
 #pragma endregion
 
@@ -99,10 +101,13 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
     if (FAILED(hr)) { return hr; }
 
     hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/glove.dds", nullptr, &g_pTextureGlove);
-	if (FAILED(hr)) { return hr; }
+    if (FAILED(hr)) { return hr; }
 
-	hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/target.dds", nullptr, &g_pTextureTarget);
-	if (FAILED(hr)) { return hr; }
+    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/target.dds", nullptr, &g_pTextureTarget);
+    if (FAILED(hr)) { return hr; }
+
+    hr = CreateDDSTextureFromFile(g_pd3dDevice, L"Textures/overlay.dds", nullptr, &g_pTextureOverlay);
+    if (FAILED(hr)) { return hr; }
 
 #pragma endregion
 
@@ -154,7 +159,7 @@ void Graphics::DrawGrid(PrimitiveBatch<VertexPositionColor>& batch, FXMVECTOR xA
 //--------------------------------------------------------------------------------------
 // Render all defined graphical objects
 //--------------------------------------------------------------------------------------
-void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMMATRIX *ball_Green, XMMATRIX *ball_Red, XMVECTOR *target_Pos) {
+void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11Device *g_pd3dDevice, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMVECTOR *ball_Green, XMVECTOR *ball_Red, XMVECTOR *target_Pos, int score, float time, bool playing) {
 
     // Draw procedurally generated dynamic grid
     //const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
@@ -163,22 +168,27 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
 
 #pragma region Text
 
-    // Draw sprite
-    g_Sprites->Begin(SpriteSortMode_Deferred);
-    //g_Sprites->Draw( g_pTextureRV2, XMFLOAT2(10, 75 ), nullptr, Colors::White );
-
+    /* Uncomment to see the debug data
     g_Font->DrawString(g_Sprites.get(), ws_Info_Green.c_str(), XMFLOAT2(10, 0), Colors::Green);
     g_Font->DrawString(g_Sprites.get(), ws_Info_Red.c_str(), XMFLOAT2(10, 40), Colors::Red);
+    */
+    if (playing) {
+        g_Sprites->Begin(SpriteSortMode_Deferred);
+        g_Font->DrawString(g_Sprites.get(), getScoreString(score).c_str(), XMFLOAT2(10, 10), Colors::WhiteSmoke);
+        g_Font->DrawString(g_Sprites.get(), getTimeString(time).c_str(), XMFLOAT2(1120, 10), Colors::WhiteSmoke);
+        g_Sprites->End();
+    }
 
-    g_Sprites->End();
 
 #pragma endregion
 
 #pragma region Models
 
     // Draw Player Hands
-    g_BallRed->Draw(*ball_Red, *g_View, *g_Projection, Colors::Red, g_pTextureGlove);
-    g_BallGreen->Draw(*ball_Green, *g_View, *g_Projection, Colors::Green, g_pTextureGlove);
+    XMMATRIX m_BallTransform = GetTransformMatrix(g_World, *ball_Red, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
+    g_BallRed->Draw(m_BallTransform, *g_View, *g_Projection, Colors::Red, g_pTextureGlove);
+    m_BallTransform = GetTransformMatrix(g_World, *ball_Green, { 0.f, 0.f, 0.f }, { 1.f, 1.f, 1.f });
+    g_BallGreen->Draw(m_BallTransform, *g_View, *g_Projection, Colors::Green, g_pTextureGlove);
 
     // Draw Scene
 
@@ -221,9 +231,19 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
     m_RopeTransform = GetTransformMatrix(g_World, { 13.f, 1.5f, 12.5f }, { XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, { 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
 
-	// Draw Target
-	XMMATRIX m_TargetTransform = GetTransformMatrix(g_World, *target_Pos, { -XM_PIDIV2, 0.0f, 0.0f }, { 3.f, 0.3f, 3.f });
-	g_Target->Draw(m_TargetTransform, *g_View, *g_Projection, Colors::White, g_pTextureTarget);
+    // Draw Target
+    XMMATRIX m_TargetTransform = GetTransformMatrix(g_World, *target_Pos, { -XM_PIDIV2, 0.0f, 0.0f }, { 3.f, 0.3f, 3.f });
+    g_Target->Draw(m_TargetTransform, *g_View, *g_Projection, Colors::White, g_pTextureTarget);
+
+    if (!playing) {
+        CommonStates states(g_pd3dDevice);
+        g_Sprites->Begin(SpriteSortMode_Deferred, states.NonPremultiplied());
+        g_Sprites->Draw(g_pTextureOverlay, XMFLOAT2(0, 0), nullptr, Colors::Black);
+        g_FontBig->DrawString(g_Sprites.get(), L"Game Over!", XMFLOAT2(470, 220), Colors::DodgerBlue);
+        g_FontBig->DrawString(g_Sprites.get(), getScoreString(score).c_str(), XMFLOAT2(500, 320), Colors::DodgerBlue);
+        g_FontBig->DrawString(g_Sprites.get(), L"Press SPACE to play again", XMFLOAT2(250, 420), Colors::DodgerBlue);
+        g_Sprites->End();
+    }
 
 #pragma endregion
 
@@ -237,4 +257,16 @@ XMMATRIX Graphics::GetTransformMatrix(XMMATRIX *g_World, XMVECTOR position, XMVE
     XMVECTOR qid = XMQuaternionIdentity();
     XMVECTOR rotate = XMQuaternionRotationRollPitchYawFromVector(rotation);
     return XMMatrixMultiply(*g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, position));
+}
+
+std::wstring Graphics::getScoreString(int score) {
+    std::string scoreStr = "Score: " + std::to_string(score);
+    return std::wstring(scoreStr.begin(), scoreStr.end());
+}
+
+
+std::wstring Graphics::getTimeString(float time) {
+    float roundedTime = roundf(time * 10.f) / 10;
+    std::string timeStr = "Time: " + std::to_string(roundedTime).substr(0, 4);
+    return std::wstring(timeStr.begin(), timeStr.end());
 }
