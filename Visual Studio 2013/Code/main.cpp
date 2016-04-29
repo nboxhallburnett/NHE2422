@@ -57,8 +57,12 @@ unsigned char m_keyboardState[256];
 std::unique_ptr<DirectX::AudioEngine>                   g_audEngine;
 std::unique_ptr<DirectX::WaveBank>                      g_waveBank;
 std::unique_ptr<DirectX::SoundEffect>                   g_soundEffect;
+std::unique_ptr<DirectX::SoundEffect>                   g_soundBell;
+std::unique_ptr<DirectX::SoundEffect>                   g_soundHit;
 std::unique_ptr<DirectX::SoundEffectInstance>           g_effect1;
 std::unique_ptr<DirectX::SoundEffectInstance>           g_effect2;
+std::unique_ptr<DirectX::SoundEffectInstance>           g_effectBell;
+std::unique_ptr<DirectX::SoundEffectInstance>           g_effectHit;
 
 uint32_t        g_audioEvent = 0;
 float           g_audioTimerAcc = 0.f;
@@ -89,7 +93,7 @@ float           z_max = 25.f;
 XMVECTOR        red_pos;
 XMVECTOR        green_pos;
 XMVECTOR        ball_bounds = { 1.f, 1.f, 1.f };
-XMVECTOR        target_bounds = { 1.5f, 1.5f, 0.15f };
+XMVECTOR        target_bounds = { 1.5f, 1.5f, 1.f };
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -356,12 +360,18 @@ HRESULT InitDevice() {
     g_audioTimerAcc = 10.f;
 
     g_waveBank.reset(new WaveBank(g_audEngine.get(), L"Audio/adpcmdroid.xwb"));
-    g_soundEffect.reset(new SoundEffect(g_audEngine.get(), L"Audio/MusicMono_adpcm.wav"));
+    //g_soundEffect.reset(new SoundEffect(g_audEngine.get(), L"Audio/MusicMono_adpcm.wav"));
+    g_soundEffect.reset(new SoundEffect(g_audEngine.get(), L"Audio/crowd.wav"));
+    g_soundBell.reset(new SoundEffect(g_audEngine.get(), L"Audio/bell.wav"));
+    g_soundHit.reset(new SoundEffect(g_audEngine.get(), L"Audio/hit.wav"));
     g_effect1 = g_soundEffect->CreateInstance();
     g_effect2 = g_waveBank->CreateInstance(10);
+    g_effectBell = g_soundBell->CreateInstance();
+    g_effectHit = g_soundHit->CreateInstance();
 
     g_effect1->Play(true);
-    g_effect2->Play();
+    //g_effect2->Play();
+    g_effectBell->Play();
 
 #endif // DXTK_AUDIO
 
@@ -571,7 +581,7 @@ void Render(float deltaTime) {
     if (g_audioTimerAcc < 0) {
         g_audioTimerAcc = 4.f;
 
-        g_waveBank->Play(g_audioEvent++);
+        //g_waveBank->Play(g_audioEvent++);
 
         if (g_audioEvent >= 11) {
             g_audioEvent = 0;
@@ -613,6 +623,10 @@ void Render(float deltaTime) {
         if (new_Target) {
             target_Pos = { randomNumber(x_min, x_max), randomNumber(y_min, y_max), randomNumber(z_min, z_max) };
             new_Target = false;
+
+            // Play the hit effect
+            g_effectHit->Stop();
+            g_effectHit->Play();
         }
 
         current_game_time -= deltaTime;
@@ -629,6 +643,10 @@ void Render(float deltaTime) {
             current_game_time = 10.f;
             next_game_time = 9.f;
             score = 0;
+
+            // Play the bell sound on game start
+            g_effectBell->Stop();
+            g_effectBell->Play();
         }
     }
 
@@ -696,6 +714,9 @@ void scorePoint() {
     next_game_time -= next_game_time / 10.f;
 }
 
+//--------------------------------------------------------------------------------------
+// Read the input from the keyboard and update the buffer
+//--------------------------------------------------------------------------------------
 bool ReadKeyboard() {
     HRESULT result;
 
