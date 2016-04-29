@@ -1,3 +1,9 @@
+//--------------------------------------------------------------------------------------
+// File: Graphics.cpp
+//
+// This file contains the Implementations for the rendering of game objects
+//--------------------------------------------------------------------------------------
+
 #include "Graphics.h"
 
 //--------------------------------------------------------------------------------------
@@ -73,7 +79,7 @@ HRESULT Graphics::Initialise(ID3D11Device * g_pd3dDevice, ID3D11DeviceContext * 
 #pragma region Meshes
 
     //g_Model = Model::CreateFromSDKMESH( g_pd3dDevice, L"tiny.sdkmesh", *g_FXFactory, true );
-    g_Model = Model::CreateFromCMO(g_pd3dDevice, L"Debug/teapot.cmo", *g_FXFactory, false);
+    //g_Model = Model::CreateFromCMO(g_pd3dDevice, L"Debug/teapot.cmo", *g_FXFactory, false);
 
 #pragma endregion
 
@@ -148,6 +154,8 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
     const XMVECTORF32 yaxis = { 0.f, 0.f, 20.f };
     //DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray, g_pImmediateContext);
 
+#pragma region Text
+
     // Draw sprite
     g_Sprites->Begin(SpriteSortMode_Deferred);
     //g_Sprites->Draw( g_pTextureRV2, XMFLOAT2(10, 75 ), nullptr, Colors::White );
@@ -156,6 +164,10 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
     g_Font->DrawString(g_Sprites.get(), ws_Info_Red.c_str(), XMFLOAT2(10, 40), Colors::Red);
 
     g_Sprites->End();
+
+#pragma endregion
+
+#pragma region Models
 
     // Draw Player Hands
     g_BallRed->Draw(*ball_Red, *g_View, *g_Projection, Colors::Red, g_pTextureGlove);
@@ -202,8 +214,14 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
     m_RopeTransform = GetTransformMatrix(g_World, XMVECTOR{ 13.f, 1.5f, 12.5f }, XMVECTOR{ XM_PIDIV2, XM_PIDIV2, XM_PIDIV2 }, XMVECTOR{ 0.2f, 25.f, 0.2f });
     g_Pole->Draw(m_RopeTransform, *g_View, *g_Projection, Colors::Red, g_pTextureRope);
 
+#pragma endregion
+
 }
 
+//--------------------------------------------------------------------------------------
+// Calculate the complete transformation matrix relative to the world,
+// from provided Position, Rotation, and Scale Vectors
+//--------------------------------------------------------------------------------------
 XMMATRIX Graphics::GetTransformMatrix(XMMATRIX *g_World, XMVECTOR position, XMVECTOR rotation, XMVECTOR scale) {
     XMVECTOR qid = XMQuaternionIdentity();
     XMVECTOR rotate = XMQuaternionRotationRollPitchYawFromVector(rotation);

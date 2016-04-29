@@ -1,3 +1,9 @@
+//--------------------------------------------------------------------------------------
+// File: graphics.h
+//
+// This file contains the definitions for the storage and rendering of graphical objects
+//--------------------------------------------------------------------------------------
+
 #pragma once
 
 #include <math.h>
@@ -17,6 +23,10 @@
 using namespace std;
 using namespace DirectX;
 
+//--------------------------------------------------------------------------------------
+// This class handles all of the graphical rendering for the game.
+// This includes all 3D Models, as well as any 2D Text or Images.
+//--------------------------------------------------------------------------------------
 class Graphics
 {
 public:
@@ -62,4 +72,3 @@ private:
 
     XMMATRIX GetTransformMatrix(XMMATRIX *g_World, XMVECTOR position, XMVECTOR rotation, XMVECTOR scale);
 };
-

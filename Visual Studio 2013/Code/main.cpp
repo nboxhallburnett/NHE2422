@@ -1,37 +1,27 @@
 //--------------------------------------------------------------------------------------
-// File: SimpleSample.cpp
+// File: main.cpp
 //
-// This is a simple Win32 desktop application showing use of DirectXTK
+// This project is based off of the SimpleSample DirectXTK sample app.
 //
+// https://github.com/nboxhallburnett/NHE2422
 // http://go.microsoft.com/fwlink/?LinkId=248929
-//
-// THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
-// PARTICULAR PURPOSE.
-//
-// Copyright (c) Microsoft Corporation. All rights reserved.
 //--------------------------------------------------------------------------------------
 
-//#define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <iostream>
 #include <windows.h>
-
-#include <math.h>
+#include "resource.h"
 
 #include <d3d11.h>
 
+#include <math.h>
+#include <algorithm>
 #include <directxmath.h>
 
 #ifdef DXTK_AUDIO
 #include <Dbt.h>
 #include "Audio.h"
 #endif
-
-#include "resource.h"
-
-#include <algorithm>
 
 #include "tracker.h"
 #include "Graphics.h"
@@ -498,8 +488,9 @@ void Render() {
 
         g_waveBank->Play(g_audioEvent++);
 
-        if (g_audioEvent >= 11)
+        if (g_audioEvent >= 11) {
             g_audioEvent = 0;
+        }
     }
 
     if (!g_audEngine->Update()) {
@@ -507,28 +498,26 @@ void Render() {
     }
 
 #endif // DXTK_AUDIO
-    //
+
     // Clear the back buffer
-    //
     g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, Colors::Black);
 
-    //
     // Clear the depth buffer to 1.0 (max depth)
-    //
     g_pImmediateContext->ClearDepthStencilView(g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
+    // Calculate the position for the red ball
     XMMATRIX red = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getRedPosition().x - (frameSize.width / 2.f)) / 50.f,
         -(cameraInput->getRedPosition().y - (frameSize.height / 2.f)) / 50.f,
         max(cameraInput->getRedSize() / 80.f, 4.f)));
 
+    // Calculate the position for the green ball
     XMMATRIX green = XMMatrixMultiply(g_World, XMMatrixTranslation((cameraInput->getGreenPosition().x - (frameSize.width / 2.f)) / 50.f,
         -(cameraInput->getGreenPosition().y - (frameSize.height / 2.f)) / 50.f,
         max(cameraInput->getGreenSize() / 200.f, 4.f)));
 
+    // Render everything defined in the graphics class
     graphics->Render(&g_World, &g_View, &g_Projection, g_pImmediateContext, cameraInput->getGreenTrackerString(), cameraInput->getRedTrackerString(), &green, &red);
 
-    //
     // Present our back buffer to our front buffer
-    //
     g_pSwapChain->Present(0, 0);
 }
