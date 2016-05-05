@@ -39,7 +39,7 @@ public:
 
     HRESULT Initialise(ID3D11Device *g_pd3dDevice, ID3D11DeviceContext *g_pImmediateContext, XMMATRIX *g_View, XMMATRIX *g_Projection);
 
-    void Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11Device *g_pd3dDevice, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMVECTOR *ball_Green, XMVECTOR *ball_Red, XMVECTOR *target_Pos, int score, float time, bool playing);
+    void Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11Device *g_pd3dDevice, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMVECTOR *ball_Green, XMVECTOR *ball_Red, XMVECTOR *target_Pos, int score, float time, bool playing, int width, int height);
 
 private:
     //--------------------------------------------------------------------------------------

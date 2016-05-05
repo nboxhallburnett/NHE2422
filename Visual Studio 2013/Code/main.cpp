@@ -70,6 +70,9 @@ float           g_audioTimerAcc = 0.f;
 HDEVNOTIFY      g_hNewAudio = nullptr;
 #endif
 
+int ScreenWidth = 1280;
+int ScreenHeight = 720;
+
 XMMATRIX        g_World;
 XMMATRIX        g_View;
 XMMATRIX        g_Projection;
@@ -199,9 +202,20 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow) {
     g_hInst = hInstance;
     RECT rc = { 0, 0, 1280, 720 };
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-    g_hWnd = CreateWindow(L"SampleWindowClass", L"Ball Boxing!", WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
-        nullptr);
+    g_hWnd = CreateWindow(L"SampleWindowClass", L"Ball Boxing!", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance, nullptr);
+    if (!g_hWnd) {
+        return E_FAIL;
+    }
+
+    HMONITOR monitor = MonitorFromWindow(g_hWnd, MONITOR_DEFAULTTOPRIMARY);
+    MONITORINFO info;
+    info.cbSize = sizeof(MONITORINFO);
+    GetMonitorInfo(monitor, &info);
+    ScreenWidth = info.rcMonitor.right - info.rcMonitor.left;
+    ScreenHeight = info.rcMonitor.bottom - info.rcMonitor.top;
+
+    // Recreate window using screen resolution
+    g_hWnd = CreateWindow(L"SampleWindowClass", L"Ball Boxing!", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, ScreenWidth, ScreenHeight, nullptr, nullptr, hInstance, nullptr);
     if (!g_hWnd) {
         return E_FAIL;
     }
@@ -260,7 +274,7 @@ HRESULT InitDevice() {
     sd.OutputWindow = g_hWnd;
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
-    sd.Windowed = TRUE;
+    sd.Windowed = FALSE;
 
     for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++) {
         g_driverType = driverTypes[driverTypeIndex];
@@ -656,7 +670,7 @@ void Render(float deltaTime) {
     }
 
     // Render everything defined in the graphics class
-    graphics->Render(&g_World, &g_View, &g_Projection, g_pd3dDevice, g_pImmediateContext, cameraInput->getGreenTrackerString(), cameraInput->getRedTrackerString(), &green_pos, &red_pos, &target_Pos, score, current_game_time, playing);
+    graphics->Render(&g_World, &g_View, &g_Projection, g_pd3dDevice, g_pImmediateContext, cameraInput->getGreenTrackerString(), cameraInput->getRedTrackerString(), &green_pos, &red_pos, &target_Pos, score, current_game_time, playing, ScreenWidth, ScreenHeight);
 
     // Present our back buffer to our front buffer
     g_pSwapChain->Present(0, 0);

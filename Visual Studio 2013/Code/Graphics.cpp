@@ -163,7 +163,7 @@ void Graphics::DrawGrid(PrimitiveBatch<VertexPositionColor>& batch, FXMVECTOR xA
 //--------------------------------------------------------------------------------------
 // Render all defined graphical objects
 //--------------------------------------------------------------------------------------
-void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11Device *g_pd3dDevice, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMVECTOR *ball_Green, XMVECTOR *ball_Red, XMVECTOR *target_Pos, int score, float time, bool playing) {
+void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projection, ID3D11Device *g_pd3dDevice, ID3D11DeviceContext *g_pImmediateContext, wstring ws_Info_Green, wstring ws_Info_Red, XMVECTOR *ball_Green, XMVECTOR *ball_Red, XMVECTOR *target_Pos, int score, float time, bool playing, int width, int height) {
 
     // Draw procedurally generated dynamic grid
     //const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
@@ -179,7 +179,7 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
     if (playing) {
         g_Sprites->Begin(SpriteSortMode_Deferred);
         g_Font->DrawString(g_Sprites.get(), getScoreString(score).c_str(), XMFLOAT2(10, 10), Colors::WhiteSmoke);
-        g_Font->DrawString(g_Sprites.get(), getTimeString(time).c_str(), XMFLOAT2(1120, 10), Colors::WhiteSmoke);
+        g_Font->DrawString(g_Sprites.get(), getTimeString(time).c_str(), XMFLOAT2(width - 160, 10), Colors::WhiteSmoke);
         g_Sprites->End();
     }
 
@@ -242,9 +242,9 @@ void Graphics::Render(XMMATRIX *g_World, XMMATRIX *g_View, XMMATRIX *g_Projectio
         CommonStates states(g_pd3dDevice);
         g_Sprites->Begin(SpriteSortMode_Deferred, states.NonPremultiplied());
         g_Sprites->Draw(g_pTextureOverlay, XMFLOAT2(0, 0), nullptr, Colors::Black);
-        g_FontBig->DrawString(g_Sprites.get(), L"Game Over!", XMFLOAT2(470, 220), Colors::DodgerBlue);
-        g_FontBig->DrawString(g_Sprites.get(), getScoreString(score).c_str(), XMFLOAT2(500, 320), Colors::DodgerBlue);
-        g_FontBig->DrawString(g_Sprites.get(), L"Press SPACE to play again", XMFLOAT2(250, 420), Colors::DodgerBlue);
+        g_FontBig->DrawString(g_Sprites.get(), L"Game Over!", XMFLOAT2(width / 2 - 170, height / 2 - 140), Colors::DodgerBlue);
+        g_FontBig->DrawString(g_Sprites.get(), getScoreString(score).c_str(), XMFLOAT2(width / 2 - 140, height / 2 - 40), Colors::DodgerBlue);
+        g_FontBig->DrawString(g_Sprites.get(), L"Press SPACE to play again", XMFLOAT2(width / 2 - 390, height / 2 + 60), Colors::DodgerBlue);
         g_Sprites->End();
     }
 
