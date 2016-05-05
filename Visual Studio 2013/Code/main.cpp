@@ -72,6 +72,7 @@ HDEVNOTIFY      g_hNewAudio = nullptr;
 
 int ScreenWidth = 1280;
 int ScreenHeight = 720;
+bool fullscreen = false;
 
 XMMATRIX        g_World;
 XMMATRIX        g_View;
@@ -207,17 +208,20 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow) {
         return E_FAIL;
     }
 
-    HMONITOR monitor = MonitorFromWindow(g_hWnd, MONITOR_DEFAULTTOPRIMARY);
-    MONITORINFO info;
-    info.cbSize = sizeof(MONITORINFO);
-    GetMonitorInfo(monitor, &info);
-    ScreenWidth = info.rcMonitor.right - info.rcMonitor.left;
-    ScreenHeight = info.rcMonitor.bottom - info.rcMonitor.top;
+    // Only resize to fullscreen if we're going fullscreen
+    if (fullscreen) {
+        HMONITOR monitor = MonitorFromWindow(g_hWnd, MONITOR_DEFAULTTOPRIMARY);
+        MONITORINFO info;
+        info.cbSize = sizeof(MONITORINFO);
+        GetMonitorInfo(monitor, &info);
+        ScreenWidth = info.rcMonitor.right - info.rcMonitor.left;
+        ScreenHeight = info.rcMonitor.bottom - info.rcMonitor.top;
 
-    // Recreate window using screen resolution
-    g_hWnd = CreateWindow(L"SampleWindowClass", L"Ball Boxing!", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, ScreenWidth, ScreenHeight, nullptr, nullptr, hInstance, nullptr);
-    if (!g_hWnd) {
-        return E_FAIL;
+        // Recreate window using screen resolution
+        g_hWnd = CreateWindow(L"SampleWindowClass", L"Ball Boxing!", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, ScreenWidth, ScreenHeight, nullptr, nullptr, hInstance, nullptr);
+        if (!g_hWnd) {
+            return E_FAIL;
+        }
     }
 
     ShowWindow(g_hWnd, nCmdShow);
@@ -274,7 +278,7 @@ HRESULT InitDevice() {
     sd.OutputWindow = g_hWnd;
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
-    sd.Windowed = FALSE;
+    sd.Windowed = !fullscreen;
 
     for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++) {
         g_driverType = driverTypes[driverTypeIndex];
