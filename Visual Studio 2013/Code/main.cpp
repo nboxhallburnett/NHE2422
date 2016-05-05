@@ -70,9 +70,9 @@ float           g_audioTimerAcc = 0.f;
 HDEVNOTIFY      g_hNewAudio = nullptr;
 #endif
 
-int ScreenWidth = 1280;
-int ScreenHeight = 720;
-bool fullscreen = false;
+int             ScreenWidth = 1280;
+int             ScreenHeight = 720;
+bool            fullscreen = false;
 
 XMMATRIX        g_World;
 XMMATRIX        g_View;
